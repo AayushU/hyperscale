@@ -1,0 +1,3046 @@
+<title>HYPERSCALE</title>
+<meta name="description" content="Build the compute. Win the future. A board game about building AI data centers.">
+<style>:root {
+  --bg: #0b1020; --bg2: #121a33; --panel: #172042; --panel2: #1e2a55; --line: #2c3a6e;
+  --text: #e6ecff; --muted: #93a0c8; --accent: #22d3ee; --accent2: #a78bfa; --good: #34d399; --bad: #f87171; --warn: #fbbf24;
+  --sea: #0e2a47; --radius: 12px;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; background: radial-gradient(1200px 800px at 70% -10%, #1b2a5a 0%, var(--bg) 60%) fixed; color: var(--text);
+  font: 15px/1.4 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+.hidden { display: none !important; }
+button, input, select { font: inherit; color: inherit; }
+button { background: var(--panel2); border: 1px solid var(--line); border-radius: 9px; padding: 7px 12px; cursor: pointer; transition: background .15s, transform .05s; }
+button:hover:not(:disabled) { background: #26357000; background: #283872; }
+button:active:not(:disabled) { transform: translateY(1px); }
+button:disabled { opacity: .45; cursor: not-allowed; }
+button.primary { background: linear-gradient(135deg, #0891b2, #7c3aed); border-color: transparent; font-weight: 600; }
+button.primary:hover:not(:disabled) { filter: brightness(1.12); }
+button.big { padding: 11px 18px; font-size: 16px; }
+button.small { padding: 3px 8px; font-size: 13px; }
+button.danger { border-color: #7f1d1d; }
+input, select { background: #0d1530; border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; }
+input:focus, select:focus { outline: 2px solid var(--accent); outline-offset: 0; }
+a { color: var(--accent); }
+.muted { color: var(--muted); font-size: 13px; }
+.error { color: var(--bad); min-height: 1.3em; margin-top: 6px; }
+.logo { font-weight: 900; letter-spacing: .12em; font-size: 54px;
+  background: linear-gradient(90deg, #22d3ee, #a78bfa 50%, #f59e0b); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.logo.small { font-size: 20px; }
+.tagline { color: var(--muted); font-size: 18px; margin-top: -4px; }
+.code { font-family: ui-monospace, Menlo, monospace; font-weight: 800; letter-spacing: .18em; background: #0d1530; border: 1px solid var(--line); padding: 2px 8px; border-radius: 6px; color: var(--accent); }
+.code.small { font-size: 13px; }
+
+/* home & lobby */
+.screen { min-height: 100%; }
+#home, #lobby { display: flex; align-items: center; justify-content: center; padding: 24px 16px; }
+.hero { max-width: 560px; text-align: center; }
+.pitch { color: #c7d0f0; margin: 18px 0 24px; }
+.home-forms { display: flex; flex-direction: column; gap: 12px; background: var(--panel); border: 1px solid var(--line); padding: 20px; border-radius: var(--radius); text-align: left; }
+.home-forms label { display: flex; flex-direction: column; gap: 4px; color: var(--muted); font-size: 13px; }
+.or { text-align: center; color: var(--muted); font-size: 13px; }
+.join-row { display: flex; gap: 8px; }
+.join-row input { flex: 1; text-transform: uppercase; letter-spacing: .2em; font-weight: 700; text-align: center; }
+.home-links { margin-top: 16px; color: var(--muted); }
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 12px; }
+.lobby-panel { width: 100%; max-width: 520px; padding: 22px; }
+.lobby-panel h2 { margin: 6px 0 12px; }
+.share { display: flex; flex-direction: column; gap: 8px; margin-bottom: 14px; }
+.share-row { display: flex; gap: 8px; } .share-row input { flex: 1; min-width: 0; }
+.seats { list-style: none; padding: 0; margin: 0 0 14px; display: flex; flex-direction: column; gap: 6px; }
+.seats li { display: flex; align-items: center; gap: 10px; background: var(--bg2); padding: 8px 10px; border-radius: 9px; border: 1px solid var(--line); }
+.seats li .grow { flex: 1; }
+.dot { width: 14px; height: 14px; border-radius: 50%; display: inline-block; border: 2px solid #0008; flex: none; }
+.host-controls { display: flex; flex-direction: column; gap: 12px; }
+.bot-row { display: flex; gap: 8px; } .bot-row select { flex: 1; min-width: 0; }
+.options { display: flex; flex-direction: column; gap: 6px; color: #c7d0f0; font-size: 14px; }
+.options input[type=number] { width: 70px; margin-left: 8px; padding: 4px 6px; }
+.badge { font-size: 11px; padding: 1px 6px; border-radius: 99px; background: var(--panel2); border: 1px solid var(--line); color: var(--muted); }
+.badge.on { color: var(--good); }
+
+/* game layout */
+#game { display: flex; flex-direction: column; height: 100vh; }
+.topbar { display: flex; align-items: center; gap: 16px; padding: 8px 14px; border-bottom: 1px solid var(--line); background: #0b1020cc; backdrop-filter: blur(6px); }
+.status { flex: 1; font-weight: 600; text-align: center; }
+.status .you { color: var(--accent); }
+.topbar-right { display: flex; gap: 12px; align-items: center; }
+.layout { flex: 1; display: grid; grid-template-columns: minmax(0, 1fr) 400px; min-height: 0; }
+.board-wrap { position: relative; min-height: 0; display: flex; align-items: center; justify-content: center; padding: 8px; }
+#board { width: 100%; height: 100%; max-height: calc(100vh - 70px); }
+.side { overflow-y: auto; padding: 10px; display: flex; flex-direction: column; gap: 10px; border-left: 1px solid var(--line); background: #0b10208a; }
+
+/* board */
+.sea { fill: url(#seaGrad); }
+.hex { stroke: #0b1020; stroke-width: .05; }
+.hex.hot { filter: url(#glow); }
+.hex-icon { font-size: .5px; text-anchor: middle; dominant-baseline: central; pointer-events: none; }
+.token { fill: #f7f1e3; stroke: #0b1020; stroke-width: .03; }
+.token-num { font-size: .3px; font-weight: 800; text-anchor: middle; dominant-baseline: central; fill: #1f2937; pointer-events: none; }
+.token-num.red { fill: #dc2626; }
+.pip { fill: #1f2937; } .pip.red { fill: #dc2626; }
+.port-line { stroke: #cbd5e1; stroke-width: .05; stroke-dasharray: .08 .06; }
+.port { fill: #0f172a; stroke: #cbd5e1; stroke-width: .03; }
+.port-text { font-size: .17px; fill: #e2e8f0; text-anchor: middle; dominant-baseline: central; font-weight: 700; pointer-events: none; }
+.port-icon { font-size: .22px; text-anchor: middle; dominant-baseline: central; pointer-events: none; }
+.road-outline { stroke: #0b1020; stroke-width: .24; stroke-linecap: round; }
+.road { stroke-width: .15; stroke-linecap: round; }
+.bldg { stroke: #0b1020; stroke-width: .04; }
+.bldg-line { stroke: #0b1020; stroke-width: .03; opacity: .6; }
+.regulator { pointer-events: none; }
+.spot { fill: #ffffff; fill-opacity: .25; stroke: #fff; stroke-width: .04; cursor: pointer; animation: pulse 1.2s infinite; }
+.spot:hover { fill-opacity: .7; }
+.edge-spot { stroke: #ffffff; stroke-opacity: .45; stroke-width: .16; stroke-linecap: round; cursor: pointer; animation: pulse 1.2s infinite; }
+.edge-spot:hover { stroke-opacity: .95; }
+.hex-pick { fill: #fff; fill-opacity: .0; stroke: #fff; stroke-width: .06; stroke-dasharray: .15 .1; cursor: pointer; }
+.hex-pick:hover { fill-opacity: .25; }
+.city-spot { fill: #fff; fill-opacity: .15; stroke: #fff; stroke-width: .06; cursor: pointer; animation: pulse 1.2s infinite; }
+.city-spot:hover { fill-opacity: .45; }
+@keyframes pulse { 50% { opacity: .45; } }
+
+.dice { position: absolute; left: 14px; bottom: 12px; display: flex; gap: 6px; align-items: center; }
+.die { width: 42px; height: 42px; background: #f8fafc; color: #0b1020; border-radius: 9px; display: grid; place-items: center; font-size: 30px; line-height: 1; box-shadow: 0 3px 0 #94a3b8; }
+.dice .total { margin-left: 6px; font-weight: 800; font-size: 20px; }
+.bank { position: absolute; right: 14px; bottom: 12px; font-size: 12px; color: var(--muted); text-align: right; }
+#offer-banner { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); z-index: 5; width: min(520px, 92%); }
+
+/* side panels */
+.headline-card { border-radius: var(--radius); padding: 10px 12px; background: linear-gradient(135deg, #3b0764, #1e3a8a); border: 1px solid #6d28d9; }
+.headline-card .kicker { font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: #c4b5fd; }
+.headline-card .title { font-weight: 800; font-size: 16px; }
+.headline-card .text { font-size: 13px; }
+.players { display: flex; flex-direction: column; gap: 6px; }
+.prow { display: grid; grid-template-columns: 6px 1fr auto; gap: 8px; align-items: center; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 7px 10px 7px 0; overflow: hidden; }
+.prow.current { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent) inset; }
+.prow .bar { align-self: stretch; }
+.prow .name { font-weight: 600; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.prow .meta { font-size: 12px; color: var(--muted); display: flex; gap: 10px; flex-wrap: wrap; }
+.prow .vp { font-size: 22px; font-weight: 900; min-width: 34px; text-align: right; }
+.prow .vp small { font-size: 11px; color: var(--muted); font-weight: 500; display: block; text-align: right; }
+.award { font-size: 11px; padding: 1px 6px; border-radius: 99px; background: #064e3b; color: #a7f3d0; }
+.award.inf { background: #4c1d95; color: #ddd6fe; }
+.offline { opacity: .55; }
+
+.me h3, .trade h3 { margin: 0 0 8px; font-size: 13px; text-transform: uppercase; letter-spacing: .1em; color: var(--muted); }
+.hand { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; margin-bottom: 10px; }
+.rcard { border-radius: 9px; padding: 6px 4px; text-align: center; border: 1px solid #0006; position: relative; }
+.rcard .ico { font-size: 20px; } .rcard .n { font-weight: 900; font-size: 18px; } .rcard .lbl { font-size: 10px; opacity: .9; }
+.rcard.zero { opacity: .35; }
+.actions { display: flex; gap: 8px; margin-bottom: 10px; }
+.actions button { flex: 1; }
+.builds { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.build { text-align: left; display: flex; flex-direction: column; gap: 2px; padding: 7px 9px; }
+.build.active { border-color: var(--accent); background: #0e7490; }
+.build .bname { font-weight: 700; font-size: 13px; }
+.build .cost { font-size: 13px; letter-spacing: 1px; }
+.build .left { font-size: 11px; color: var(--muted); }
+.devs { margin-top: 10px; display: flex; flex-direction: column; gap: 6px; }
+.dev { display: flex; align-items: center; gap: 8px; background: var(--bg2); border: 1px solid var(--line); border-radius: 9px; padding: 6px 8px; }
+.dev .dname { font-weight: 700; font-size: 13px; } .dev .dtext { font-size: 12px; color: var(--muted); }
+.dev .grow { flex: 1; }
+.dev.new { opacity: .7; }
+.tabs { display: flex; gap: 4px; margin-bottom: 8px; }
+.tab { padding: 4px 10px; font-size: 13px; background: transparent; }
+.tab.active { background: var(--panel2); border-color: var(--accent); }
+.trade-grid { display: grid; grid-template-columns: auto repeat(5, 1fr); gap: 4px 6px; align-items: center; font-size: 13px; }
+.trade-grid .rh { text-align: center; font-size: 18px; }
+.stepper { display: flex; align-items: center; justify-content: center; gap: 2px; }
+.stepper button { padding: 0 6px; font-size: 13px; line-height: 20px; }
+.stepper span { min-width: 14px; text-align: center; font-weight: 700; }
+.bank-row { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-bottom: 8px; }
+.bank-row select { padding: 5px 6px; }
+.offer { background: var(--bg2); border: 1px solid var(--accent2); border-radius: 10px; padding: 10px; font-size: 14px; }
+.offer .row { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+.log { height: 220px; overflow-y: auto; font-size: 13px; display: flex; flex-direction: column; gap: 3px; }
+.log .entry { padding-left: 8px; border-left: 3px solid transparent; }
+.log .entry.headline { color: #ddd6fe; }
+.chat-form { display: flex; gap: 6px; margin-top: 8px; } .chat-form input { flex: 1; min-width: 0; }
+#chat-badge { color: var(--warn); font-weight: 800; }
+
+/* modal */
+.modal { position: fixed; inset: 0; background: #000a; display: grid; place-items: center; z-index: 50; padding: 16px; }
+.modal-body { background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 18px; width: min(460px, 100%); max-height: 90vh; overflow: auto; }
+.modal-body h2 { margin: 0 0 10px; }
+.modal-body .row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+.pick-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
+.pick-grid button { display: flex; flex-direction: column; align-items: center; padding: 8px 2px; }
+.pick-grid button.sel { border-color: var(--accent); background: #0e7490; }
+.scores { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 14px; }
+.scores td, .scores th { padding: 5px 6px; border-bottom: 1px solid var(--line); text-align: left; }
+.toast { position: fixed; bottom: 18px; left: 50%; transform: translateX(-50%); background: #7f1d1d; border: 1px solid #ef4444; padding: 9px 14px; border-radius: 10px; z-index: 60; max-width: 90%; }
+.toast.info { background: #164e63; border-color: var(--accent); }
+
+@media (max-width: 900px) {
+  #game { height: auto; min-height: 100vh; }
+  .layout { grid-template-columns: 1fr; }
+  .board-wrap { height: 62vh; min-height: 340px; padding: 0; }
+  #board { max-height: 62vh; }
+  .side { border-left: 0; overflow: visible; padding: 10px 16px 24px; }
+  .topbar { gap: 8px; padding: 8px 10px; }
+  .topbar .logo { display: none; }
+  .status { font-size: 14px; text-align: left; }
+  .logo { font-size: 38px; }
+  .die { width: 34px; height: 34px; font-size: 24px; }
+}
+@media (max-width: 900px) {
+  #offer-banner { position: fixed; top: 52px; }
+  .topbar { position: sticky; top: 0; z-index: 10; }
+}
+.hit { cursor: pointer; }
+@media (max-width: 900px) {
+  .board-wrap { height: auto; min-height: 0; padding: 4px 0 52px; }
+  #board { height: auto; max-height: none; aspect-ratio: 12.1 / 10.6; }
+}
+.tables { margin-top: 16px; gap: 6px; }
+.tables h3 { margin: 4px 0 0; font-size: 13px; text-transform: uppercase; letter-spacing: .1em; color: var(--muted); }
+.options select { margin-left: 8px; padding: 4px 6px; }
+.doc-modal { z-index: 70; place-items: start center; }
+.doc-wrap { width: min(980px, 100%); max-height: calc(100% - 24px); overflow: auto; position: relative; padding-top: 44px; }
+#doc-close { position: absolute; top: 10px; right: 10px; }
+.doc { max-width: 760px; margin: 0 auto; line-height: 1.6; }
+.doc table { border-collapse: collapse; width: 100%; font-size: 14px; display: block; overflow-x: auto; }
+.doc th, .doc td { border: 1px solid var(--line); padding: 6px 8px; text-align: left; vertical-align: top; }
+.doc th { background: var(--panel2); }
+.doc h1 { font-size: 30px; } .doc h2 { border-bottom: 1px solid var(--line); padding-bottom: 4px; margin-top: 28px; }
+.doc h3 { color: #c4b5fd; }
+.gallery .card { width: 56mm; height: 80mm; }
+
+:root { color-scheme: dark; }
+html, body { height: 100%; background: var(--bg); }
+@media (min-width: 901px) { body.hosted #game { height: 100%; } }
+</style>
+<div id="home" class="screen hidden">
+    <div class="hero">
+      <div class="logo">HYPERSCALE</div>
+      <div class="tagline">Build the compute. Win the future.</div>
+      <p class="pitch">Claim GPUs, Power, Water, Steel and Talent. Lay fiber, raise Data Centers, upgrade them into Hyperscale Campuses, and outmaneuver your rivals with Lobbyists and R&amp;D. Games take about 30–40 minutes.</p>
+      <div class="home-forms">
+        <label>Your name <input id="home-name" maxlength="20" placeholder="e.g. Jensen" autocomplete="nickname"></label>
+        <button id="btn-create" class="primary big">Create a game</button>
+        <div class="or">or join a friend</div>
+        <div class="join-row">
+          <input id="home-code" maxlength="5" placeholder="CODE" autocomplete="off">
+          <button id="btn-join" class="big">Join</button>
+        </div>
+        <div id="home-error" class="error"></div>
+      </div>
+      <div id="home-tables" class="home-forms tables hidden">
+        <h3>Your tables</h3><ul id="tables-mine" class="seats"></ul>
+        <h3>Open tables</h3><ul id="tables-open" class="seats"></ul>
+      </div>
+      <div class="home-links"><a href="/rules.html" target="_blank">How to play</a> · <a href="/cards.html" target="_blank">All the cards</a></div>
+    </div>
+  </div>
+
+  <div id="lobby" class="screen hidden">
+    <div class="panel lobby-panel">
+      <div class="logo small">HYPERSCALE</div>
+      <h2>Game lobby</h2>
+      <div class="share">
+        <div>Room code <span id="lobby-code" class="code"></span></div>
+        <div class="share-row"><input id="lobby-link" readonly><button id="btn-copy">Copy</button></div>
+        <div class="muted" id="share-hint"></div>
+      </div>
+      <ul id="lobby-seats" class="seats"></ul>
+      <div id="lobby-host" class="host-controls">
+        <div class="bot-row">
+          <select id="bot-profile">
+            <option value="balanced">Balanced bot</option>
+            <option value="expander">Expander bot (builds wide)</option>
+            <option value="campus">Campus bot (builds tall)</option>
+            <option value="researcher">Researcher bot (R&amp;D heavy)</option>
+          </select>
+          <button id="btn-addbot">Add bot</button>
+        </div>
+        <div class="options">
+          <label>Game length <select id="opt-mode"><option value="quick">Quick (30–40 min)</option><option value="classic">Classic (60–90 min)</option></select> <span class="muted" id="opt-mode-note"></span></label>
+          <label><input id="opt-headlines" type="checkbox"> Headlines event deck</label>
+          <label><input id="opt-friendly" type="checkbox"> Friendly Regulator (can't target players with ≤2 VP)</label>
+        </div>
+        <button id="btn-start" class="primary big">Start game</button>
+      </div>
+      <div id="lobby-wait" class="muted">Waiting for the host to start…</div>
+      <div style="margin-top:12px"><button id="btn-leave" class="small">← Back to tables</button></div>
+      <div class="home-links"><a href="/rules.html" target="_blank">How to play</a> · <a href="/cards.html" target="_blank">All the cards</a></div>
+    </div>
+  </div>
+
+  <div id="game" class="screen hidden">
+    <header class="topbar">
+      <div class="logo small">HYPERSCALE</div>
+      <div id="status" class="status"></div>
+      <div class="topbar-right">
+        <button id="btn-home" class="small" title="Back to your tables (the game keeps going)">☰ Tables</button>
+        <span id="room-code" class="code small"></span>
+        <a href="/rules.html" target="_blank" class="link">Rules</a>
+      </div>
+    </header>
+    <main class="layout">
+      <section class="board-wrap">
+        <div id="offer-banner"></div>
+        <svg id="board" viewBox="-6.05 -5.3 12.1 10.6" preserveAspectRatio="xMidYMid meet"></svg>
+        <div id="dice" class="dice"></div>
+        <div id="bank" class="bank"></div>
+      </section>
+      <aside class="side">
+        <div id="headline"></div>
+        <div id="players" class="players"></div>
+        <div id="me" class="panel me"></div>
+        <div id="trade" class="panel trade"></div>
+        <div class="panel logpanel">
+          <div class="tabs"><button data-tab="log" class="tab active">Log</button><button data-tab="chat" class="tab">Chat <span id="chat-badge"></span></button></div>
+          <div id="log" class="log"></div>
+          <div id="chat" class="log hidden"></div>
+          <form id="chat-form" class="chat-form hidden"><input id="chat-input" maxlength="300" placeholder="Say something…" autocomplete="off"><button>Send</button></form>
+        </div>
+      </aside>
+    </main>
+  </div>
+
+  <div id="doc" class="modal doc-modal hidden"><div class="modal-body doc-wrap"><button id="doc-close" class="small">✕ Close</button><div id="doc-body"></div></div></div>
+  <div id="modal" class="modal hidden"><div id="modal-body" class="modal-body"></div></div>
+  <div id="toast" class="toast hidden"></div>
+<script type="module">
+globalThis.HYPERSCALE_HOSTED = true;
+globalThis.HYPERSCALE_WS = false;
+const __mods = {};
+// ---- shared/content.js
+__mods["content"] = (() => {
+// HYPERSCALE: all themed names, costs and card text live here so the
+// engine, the website and the rulebook agree on one source of truth.
+
+const RESOURCES = ['gpu', 'power', 'water', 'steel', 'talent'];
+
+const RESOURCE_INFO = {
+  gpu:    { name: 'GPUs',   icon: '🧠', color: '#8b5cf6', terrain: 'fab' },
+  power:  { name: 'Power',  icon: '⚡', color: '#f59e0b', terrain: 'plant' },
+  water:  { name: 'Water',  icon: '💧', color: '#0ea5e9', terrain: 'reservoir' },
+  steel:  { name: 'Steel',  icon: '🏗️', color: '#64748b', terrain: 'mill' },
+  talent: { name: 'Talent', icon: '🧑‍💻', color: '#10b981', terrain: 'hub' },
+};
+
+const TERRAIN_INFO = {
+  fab:       { name: 'Chip Fab',       resource: 'gpu',    count: 3, color: '#7c3aed', icon: '🏭', blurb: 'Lithography lines turning sand into accelerators.' },
+  plant:     { name: 'Power Plant',    resource: 'power',  count: 4, color: '#f59e0b', icon: '⚡', blurb: 'Gas turbines, solar fields and the odd small reactor.' },
+  reservoir: { name: 'Reservoir',      resource: 'water',  count: 4, color: '#0ea5e9', icon: '💧', blurb: 'Every megawatt of compute needs somewhere to dump the heat.' },
+  mill:      { name: 'Steel Mill',     resource: 'steel',  count: 3, color: '#64748b', icon: '🏗️', blurb: 'Racks, beams and rebar for the buildout.' },
+  hub:       { name: 'Tech Hub',       resource: 'talent', count: 4, color: '#10b981', icon: '🎓', blurb: 'Universities and startup districts full of engineers.' },
+  desert:    { name: 'Permit Desert',  resource: null,     count: 1, color: '#d6b98c', icon: '🏜️', blurb: 'Cheap land, no infrastructure, and the Regulator\'s home office.' },
+};
+
+const BUILDINGS = {
+  road:       { name: 'Fiber Line',        cost: { steel: 1, talent: 1 }, vp: 0, limit: 15,
+                blurb: 'Connects your sites. Build 5+ in an unbroken chain to contend for Largest Network.' },
+  settlement: { name: 'Data Center',       cost: { steel: 1, talent: 1, water: 1, power: 1 }, vp: 1, limit: 5,
+                blurb: '1 VP. Produces 1 resource from each adjacent region.' },
+  city:       { name: 'Hyperscale Campus', cost: { gpu: 3, power: 2 }, vp: 2, limit: 4,
+                blurb: 'Upgrade a Data Center. 2 VP. Produces 2 resources from each adjacent region.' },
+  dev:        { name: 'R&D Card',          cost: { gpu: 1, water: 1, talent: 1 }, vp: 0,
+                blurb: 'Draw a card from the R&D deck.' },
+};
+
+// type -> deck composition and text. `kind` drives engine behaviour.
+const DEV_CARDS = {
+  lobbyist: {
+    kind: 'lobbyist', count: 14, name: 'Lobbyist',
+    text: 'Move the Regulator to any region, then take 1 random resource from a player with a building there. Counts toward Most Influence.',
+    flavor: '"Senator, have you considered how many jobs this campus creates?"',
+  },
+  fiber: {
+    kind: 'fiber', count: 2, name: 'Fiber Rollout',
+    text: 'Build 2 Fiber Lines for free.',
+    flavor: 'Dark fiber was already in the ground. You just had to light it.',
+  },
+  venture: {
+    kind: 'venture', count: 2, name: 'Venture Round',
+    text: 'Take any 2 resources from the bank (they can be the same).',
+    flavor: 'Series F, $40B post-money, no revenue. Champagne all round.',
+  },
+  squeeze: {
+    kind: 'squeeze', count: 2, name: 'Supply Squeeze',
+    text: 'Name a resource. Every other player gives you all of that resource they hold.',
+    flavor: 'You pre-ordered the next three years of global HBM output.',
+  },
+  vp: {
+    kind: 'vp', count: 5, name: 'Breakthrough',
+    text: '1 Victory Point. Keep it hidden until it wins you the game.',
+    variants: [
+      { name: 'Frontier Model Launch', flavor: 'Tops every leaderboard for almost a full week.' },
+      { name: 'Nobel Prize',           flavor: 'Turns out protein folding was the warm-up.' },
+      { name: 'Sovereign AI Deal',     flavor: 'A whole nation signs a ten-year compute contract.' },
+      { name: 'Fusion PPA',            flavor: 'A power purchase agreement with a reactor that actually works.' },
+      { name: 'Billion-User App',      flavor: 'Your assistant is now everyone\'s assistant.' },
+    ],
+  },
+};
+
+const SPECIAL_CARDS = {
+  longestRoad: { name: 'Largest Network', vp: 2,
+    text: 'The first player with an unbroken chain of 5+ Fiber Lines takes this card. Someone who builds a longer chain takes it from you.' },
+  largestArmy: { name: 'Most Influence',  vp: 2,
+    text: 'The first player to play 3 Lobbyists takes this card. Someone who plays more Lobbyists takes it from you.' },
+};
+
+const PORT_INFO = {
+  any: { name: 'Spot Market', ratio: 3, text: 'Trade 3 identical resources for any 1.' },
+  // resource ports: 2:1
+};
+
+const GAME_NAME = 'HYPERSCALE';
+const TAGLINE = 'Build the compute. Win the future.';
+const PLAYER_COLORS = ['#ef4444', '#3b82f6', '#f8fafc', '#f97316'];
+const PLAYER_COLOR_NAMES = ['Red', 'Blue', 'White', 'Orange'];
+
+// Headlines: an event deck. One headline is revealed at the start of every round
+// and lasts until the next round starts. `effect` drives engine behaviour.
+const HEADLINES = [
+  { id: 'fabYield',    name: 'Fab Yield Breakthrough', effect: { produce: { fab: 2 } },       text: 'Chip Fabs produce double this round.', flavor: 'The new node finally works. Wafers everywhere.' },
+  { id: 'exportCtl',   name: 'Export Controls',        effect: { produce: { fab: 0 } },       text: 'Chip Fabs produce nothing this round.', flavor: 'Your shipment is stuck in a customs warehouse, pending review.' },
+  { id: 'reactor',     name: 'Reactor Comes Online',   effect: { produce: { plant: 2 } },     text: 'Power Plants produce double this round.', flavor: 'Twenty years of permitting, one glorious ribbon cutting.' },
+  { id: 'blackouts',   name: 'Rolling Blackouts',      effect: { produce: { plant: 0 } },     text: 'Power Plants produce nothing this round.', flavor: 'The grid operator would like everyone to stop training for a bit.' },
+  { id: 'rainfall',    name: 'Record Rainfall',        effect: { produce: { reservoir: 2 } }, text: 'Reservoirs produce double this round.', flavor: 'Drought declared over. Cooling towers rejoice.' },
+  { id: 'heatwave',    name: 'Heat Wave',              effect: { produce: { reservoir: 0 } }, text: 'Reservoirs produce nothing this round.', flavor: 'Every chiller in the region is running flat out.' },
+  { id: 'steelGlut',   name: 'Steel Glut',             effect: { produce: { mill: 2 } },      text: 'Steel Mills produce double this round.', flavor: 'Overcapacity overseas means cheap beams at home.' },
+  { id: 'tariffs',     name: 'Tariff War',             effect: { produce: { mill: 0 } },      text: 'Steel Mills produce nothing this round.', flavor: 'Nobody is quite sure who started it.' },
+  { id: 'hiringBoom',  name: 'Hiring Boom',            effect: { produce: { hub: 2 } },       text: 'Tech Hubs produce double this round.', flavor: 'A rival lab just imploded. Its whole team is on the market.' },
+  { id: 'visaFreeze',  name: 'Visa Freeze',            effect: { produce: { hub: 0 } },       text: 'Tech Hubs produce nothing this round.', flavor: 'The offer letters are signed. The paperwork is not.' },
+  { id: 'infraBill',   name: 'Infrastructure Bill',    effect: { cost: { road: { steel: 1 } } },                     text: 'Fiber Lines cost just 1 Steel this round.', flavor: 'Broadband money, finally spent on broadband.' },
+  { id: 'gpuGlut',     name: 'GPU Glut',               effect: { cost: { city: { gpu: 2, power: 2 } } },             text: 'Hyperscale Campuses cost 2 GPUs + 2 Power this round.', flavor: 'Last generation\'s flagship is suddenly on clearance.' },
+  { id: 'openSource',  name: 'Open-Source Release',    effect: { cost: { dev: { gpu: 1, talent: 1 } } },             text: 'R&D cards cost just 1 GPU + 1 Talent this round.', flavor: 'Someone dropped the weights on a Friday night.' },
+  { id: 'taxBreak',    name: 'Tax Abatement',          effect: { cost: { settlement: { steel: 1, talent: 1, power: 1 } } }, text: 'Data Centers cost Steel + Talent + Power (no Water) this round.', flavor: 'Thirty years of property tax relief in exchange for forty jobs.' },
+  { id: 'tradeSummit', name: 'Trade Summit',           effect: { maxRatio: 3 },               text: 'Everyone trades with the market at 3:1 (or better, with a port) this round.', flavor: 'Handshakes, photo ops and a very long communique.' },
+  { id: 'moratorium',  name: 'Zoning Moratorium',      effect: { ban: ['settlement'] },       text: 'No new Data Centers may be built this round. Upgrades are still allowed.', flavor: 'The county board wants to "study the noise impacts".' },
+  { id: 'vacation',    name: 'Regulator on Vacation',  effect: { noRegulator: true },         text: 'Rolling a 7 this round still forces discards, but the Regulator stays put and nobody is robbed.', flavor: 'Out of office until Monday. Do not expect a reply.' },
+  { id: 'antitrust',   name: 'Antitrust Probe',        effect: { antitrust: 2 },              text: 'When revealed: the player(s) with the most VP return 2 random resources to the bank.', flavor: 'Investigators would like to see every email you have ever sent.' },
+  { id: 'grant',       name: 'Small Business Grant',   effect: { grant: 2 },                  text: 'When revealed: the player(s) with the fewest VP take 2 random resources from the bank.', flavor: 'The application was 140 pages. Worth it.' },
+];
+
+return { RESOURCES, RESOURCE_INFO, TERRAIN_INFO, BUILDINGS, DEV_CARDS, SPECIAL_CARDS, PORT_INFO, GAME_NAME, TAGLINE, PLAYER_COLORS, PLAYER_COLOR_NAMES, HEADLINES };
+})();
+
+// ---- shared/engine.js
+__mods["engine"] = (() => {
+// HYPERSCALE game engine. Pure, deterministic (seeded RNG), no I/O.
+// Runs in Node (server, bots, simulations, tests) and in the browser (UI hints).
+
+const { RESOURCES, TERRAIN_INFO, BUILDINGS, DEV_CARDS, PLAYER_COLORS, HEADLINES } = __mods["content"];
+
+// ---------------------------------------------------------------- RNG
+function nextRandom(state) {
+  // mulberry32
+  let t = (state.rng = (state.rng + 0x6d2b79f5) >>> 0);
+  t = Math.imul(t ^ (t >>> 15), t | 1);
+  t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+  return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+}
+function randInt(state, n) { return Math.floor(nextRandom(state) * n); }
+function shuffle(state, arr) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = randInt(state, i + 1);
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+// ---------------------------------------------------------------- Topology
+// Pointy-top hexes in axial coordinates, radius 2 (19 regions).
+const SQRT3 = Math.sqrt(3);
+function buildTopology(radius = 2) {
+  const hexes = [];
+  for (let q = -radius; q <= radius; q++) {
+    for (let r = -radius; r <= radius; r++) {
+      const s = -q - r;
+      if (Math.abs(s) > radius) continue;
+      hexes.push({ q, r, x: SQRT3 * (q + r / 2), y: 1.5 * r });
+    }
+  }
+  // Reading order: top row first, left to right.
+  hexes.sort((a, b) => a.r - b.r || a.q - b.q);
+  hexes.forEach((h, i) => { h.id = i; });
+
+  const vertexKey = new Map();
+  const vertices = [];
+  const edgeKey = new Map();
+  const edges = [];
+  const key = (x, y) => `${Math.round(x * 1000)},${Math.round(y * 1000)}`;
+
+  for (const h of hexes) {
+    h.vertices = [];
+    for (let i = 0; i < 6; i++) {
+      const ang = (Math.PI / 180) * (60 * i - 90); // start at top corner, clockwise
+      const x = h.x + Math.cos(ang), y = h.y + Math.sin(ang);
+      const k = key(x, y);
+      let v = vertexKey.get(k);
+      if (v === undefined) {
+        v = vertices.length;
+        vertexKey.set(k, v);
+        vertices.push({ id: v, x, y, hexes: [], edges: [], neighbors: [] });
+      }
+      vertices[v].hexes.push(h.id);
+      h.vertices.push(v);
+    }
+    h.edges = [];
+    for (let i = 0; i < 6; i++) {
+      const a = h.vertices[i], b = h.vertices[(i + 1) % 6];
+      const k = a < b ? `${a}-${b}` : `${b}-${a}`;
+      let e = edgeKey.get(k);
+      if (e === undefined) {
+        e = edges.length;
+        edgeKey.set(k, e);
+        edges.push({ id: e, a: Math.min(a, b), b: Math.max(a, b), hexes: [] });
+        vertices[a].edges.push(e);
+        vertices[b].edges.push(e);
+        vertices[a].neighbors.push(b);
+        vertices[b].neighbors.push(a);
+      }
+      edges[e].hexes.push(h.id);
+    }
+  }
+  for (const h of hexes) {
+    h.neighbors = hexes.filter(o => o !== h && Math.abs(o.q - h.q) <= 1 && Math.abs(o.r - h.r) <= 1 &&
+      Math.abs((-o.q - o.r) - (-h.q - h.r)) <= 1).map(o => o.id);
+  }
+  // Coastal edges ordered clockwise around the island, for port placement.
+  const coast = edges.filter(e => e.hexes.length === 1).map(e => {
+    const mx = (vertices[e.a].x + vertices[e.b].x) / 2, my = (vertices[e.a].y + vertices[e.b].y) / 2;
+    return { id: e.id, angle: Math.atan2(my, mx) };
+  }).sort((a, b) => a.angle - b.angle).map(c => c.id);
+  return { hexes, vertices, edges, coast };
+}
+
+const TOPO = buildTopology(2);
+
+// Port slots: 9 coastal edges, spaced so no two share a vertex.
+const PORT_SLOTS = [0, 3, 7, 10, 13, 17, 20, 23, 27];
+
+const PIPS = { 2: 1, 3: 2, 4: 3, 5: 4, 6: 5, 8: 5, 9: 4, 10: 3, 11: 2, 12: 1 };
+
+// ---------------------------------------------------------------- Helpers
+const emptyHand = () => Object.fromEntries(RESOURCES.map(r => [r, 0]));
+const handSize = hand => RESOURCES.reduce((s, r) => s + (hand[r] || 0), 0);
+function canAfford(hand, cost) {
+  return Object.entries(cost).every(([r, n]) => (hand[r] || 0) >= n);
+}
+function pay(state, player, cost) {
+  for (const [r, n] of Object.entries(cost)) {
+    player.resources[r] -= n;
+    state.bank[r] += n;
+  }
+}
+function fail(msg) { const e = new Error(msg); e.rule = true; throw e; }
+function log(state, msg, pid = null) {
+  state.log.push({ n: state.log.length, msg, pid, turn: state.turnNumber });
+  if (state.log.length > 400) state.log.splice(0, state.log.length - 400);
+}
+const pname = (state, pid) => state.players[pid].name;
+const resName = r => r;
+
+// ---------------------------------------------------------------- Setup
+const DEFAULT_OPTIONS = {
+  vpToWin: 10,
+  discardLimit: 7,
+  friendlyRegulator: false, // regulator may not target players with <= 2 public VP
+  headlines: true,          // reveal a Headline event card at the start of every round
+  terrainCounts: null,      // override region counts (balance experiments)
+  costs: null,              // override build costs (balance experiments)
+  setupPayoutBoth: false,   // both starting Data Centers pay out (quick game)
+  startHand: null,          // extra starting resources for everyone, e.g. {steel:1,...}
+  dryRollGrant: 0,          // on a non-7 roll, players who get nothing take this many random resources
+};
+
+// Game-length presets offered in the lobby.
+const MODES = {
+  quick: {
+    label: 'Quick (30–40 min)', vpToWin: 8, setupPayoutBoth: true, dryRollGrant: 1,
+    seatBonus: { 2: [0, 1], 3: [0, 1, 2], 4: [0, 0, 1, 2] },
+  },
+  classic: { label: 'Classic (60–90 min)', vpToWin: 10, setupPayoutBoth: false, dryRollGrant: 0, seatBonus: null },
+};
+
+function createGame({ players, seed = Date.now() >>> 0, options = {} }) {
+  if (!players || players.length < 2 || players.length > 4) throw new Error('HYPERSCALE needs 2 to 4 players');
+  const state = {
+    version: 1,
+    seed,
+    rng: seed >>> 0,
+    options: { ...DEFAULT_OPTIONS, ...options },
+    phase: 'setup',
+    turnNumber: 0,
+    current: 0,
+    players: players.map((p, i) => ({
+      id: i,
+      name: p.name || `Player ${i + 1}`,
+      color: p.color || PLAYER_COLORS[i],
+      bot: p.bot || null,
+      resources: emptyHand(),
+      devCards: [],          // {type, variant, boughtTurn}
+      playedDev: { lobbyist: 0, fiber: 0, venture: 0, squeeze: 0 },
+      pieces: { road: BUILDINGS.road.limit, settlement: BUILDINGS.settlement.limit, city: BUILDINGS.city.limit },
+      stats: { produced: emptyHand(), stolen: 0, lostToSteal: 0, discarded: 0, tradesBank: 0, tradesPlayer: 0 },
+    })),
+    hexes: [],
+    ports: [],              // {edge, type: 'any'|resource, vertices:[a,b]}
+    buildings: {},          // vertexId -> {owner, type:'settlement'|'city'}
+    roads: {},              // edgeId -> owner
+    regulator: null,
+    bank: Object.fromEntries(RESOURCES.map(r => [r, 19])),
+    devDeck: [],
+    longestRoad: { holder: null, lengths: [] },
+    largestArmy: { holder: null },
+    setup: null,
+    turn: null,
+    trade: null,
+    log: [],
+    lastRoll: null,
+    rollHistory: Object.fromEntries([2,3,4,5,6,7,8,9,10,11,12].map(n => [n, 0])),
+    winner: null,
+  };
+  // Warm up RNG so close seeds diverge.
+  for (let i = 0; i < 8; i++) nextRandom(state);
+  generateBoard(state);
+
+  // R&D deck
+  const deck = [];
+  for (const [type, info] of Object.entries(DEV_CARDS)) {
+    for (let i = 0; i < info.count; i++) {
+      deck.push({ type, variant: info.variants ? info.variants[i % info.variants.length].name : info.name });
+    }
+  }
+  state.devDeck = shuffle(state, deck);
+  state.headline = null;
+  state.headlineDeck = [];
+  state.headlineCount = 0;
+
+  // Snake draft for initial placement, starting from a random player.
+  const n = state.players.length;
+  const first = randInt(state, n);
+  const order = [];
+  for (let i = 0; i < n; i++) order.push((first + i) % n);
+  for (let i = n - 1; i >= 0; i--) order.push((first + i) % n);
+  state.setup = { order, index: 0, step: 'settlement', lastVertex: null };
+  state.current = order[0];
+  state.firstPlayer = first;
+  log(state, `Setup begins. ${pname(state, first)} places first.`);
+  return state;
+}
+
+function generateBoard(state) {
+  const terrains = [];
+  const counts = state.options.terrainCounts || {};
+  for (const [t, info] of Object.entries(TERRAIN_INFO)) for (let i = 0; i < (counts[t] ?? info.count); i++) terrains.push(t);
+  if (terrains.length !== 19) throw new Error('terrain counts must total 19');
+  const numbers = [2, 3, 3, 4, 4, 5, 5, 6, 6, 8, 8, 9, 9, 10, 10, 11, 11, 12];
+  for (let attempt = 0; attempt < 1000; attempt++) {
+    const ts = shuffle(state, terrains.slice());
+    const ns = shuffle(state, numbers.slice());
+    const hexes = TOPO.hexes.map((h, i) => ({ id: h.id, terrain: ts[i], number: null }));
+    let k = 0;
+    for (const h of hexes) if (h.terrain !== 'desert') h.number = ns[k++];
+    // Red numbers (6, 8) never touch; identical numbers never touch.
+    let ok = true;
+    for (const h of hexes) {
+      for (const nb of TOPO.hexes[h.id].neighbors) {
+        const o = hexes[nb];
+        if (!h.number || !o.number) continue;
+        if ((h.number === 6 || h.number === 8) && (o.number === 6 || o.number === 8)) ok = false;
+        if (h.number === o.number) ok = false;
+      }
+    }
+    // Avoid any single resource being concentrated on one hot vertex
+    for (const v of TOPO.vertices) {
+      const res = v.hexes.map(id => hexes[id].terrain);
+      if (res.length === 3 && res[0] === res[1] && res[1] === res[2]) ok = false;
+    }
+    if (!ok) continue;
+    state.hexes = hexes;
+    state.regulator = hexes.find(h => h.terrain === 'desert').id;
+    break;
+  }
+  if (!state.hexes.length) throw new Error('board generation failed');
+  const portTypes = shuffle(state, ['any', 'any', 'any', 'any', ...RESOURCES]);
+  state.ports = PORT_SLOTS.map((slot, i) => {
+    const e = TOPO.edges[TOPO.coast[slot]];
+    return { edge: e.id, type: portTypes[i], vertices: [e.a, e.b] };
+  });
+}
+
+// ---------------------------------------------------------------- Queries
+function victoryPoints(state, pid, includeHidden = true) {
+  let vp = 0;
+  for (const b of Object.values(state.buildings)) if (b.owner === pid) vp += b.type === 'city' ? 2 : 1;
+  if (state.longestRoad.holder === pid) vp += 2;
+  if (state.largestArmy.holder === pid) vp += 2;
+  if (includeHidden) vp += state.players[pid].devCards.filter(c => c.type === 'vp').length;
+  return vp;
+}
+
+function vertexFree(state, v) {
+  if (state.buildings[v]) return false;
+  return TOPO.vertices[v].neighbors.every(n => !state.buildings[n]);
+}
+
+function legalSettlementVertices(state, pid, setup = false) {
+  const out = [];
+  for (const v of TOPO.vertices) {
+    if (!vertexFree(state, v.id)) continue;
+    if (!setup && !v.edges.some(e => state.roads[e] === pid)) continue;
+    out.push(v.id);
+  }
+  return out;
+}
+
+function legalCityVertices(state, pid) {
+  return Object.entries(state.buildings)
+    .filter(([, b]) => b.owner === pid && b.type === 'settlement').map(([v]) => +v);
+}
+
+function legalRoadEdges(state, pid, fromVertex = null) {
+  const out = [];
+  for (const e of TOPO.edges) {
+    if (state.roads[e.id] !== undefined) continue;
+    if (fromVertex !== null) { if (e.a === fromVertex || e.b === fromVertex) out.push(e.id); continue; }
+    for (const v of [e.a, e.b]) {
+      const b = state.buildings[v];
+      if (b && b.owner === pid) { out.push(e.id); break; }
+      if (b && b.owner !== pid) continue; // can't extend through an opponent's building
+      if (TOPO.vertices[v].edges.some(oe => oe !== e.id && state.roads[oe] === pid)) { out.push(e.id); break; }
+    }
+  }
+  return out;
+}
+
+// Effective cost of a build this round (Headlines can discount).
+function costOf(state, kind) {
+  return state.headline?.effect.cost?.[kind] || state.options.costs?.[kind] || BUILDINGS[kind].cost;
+}
+function isBanned(state, kind) {
+  return !!state.headline?.effect.ban?.includes(kind);
+}
+
+function tradeRatio(state, pid, resource) {
+  let ratio = state.headline?.effect.maxRatio || 4;
+  for (const p of state.ports) {
+    if (!p.vertices.some(v => state.buildings[v]?.owner === pid)) continue;
+    if (p.type === resource) ratio = Math.min(ratio, 2);
+    else if (p.type === 'any') ratio = Math.min(ratio, 3);
+  }
+  return ratio;
+}
+
+function longestRoadLength(state, pid) {
+  const mine = Object.keys(state.roads).filter(e => state.roads[e] === pid).map(Number);
+  if (!mine.length) return 0;
+  const mineSet = new Set(mine);
+  const blocked = v => state.buildings[v] && state.buildings[v].owner !== pid;
+  let best = 0;
+  const used = new Set();
+  function dfs(v, len) {
+    if (len > best) best = len;
+    if (blocked(v) && len > 0) return;
+    for (const e of TOPO.vertices[v].edges) {
+      if (!mineSet.has(e) || used.has(e)) continue;
+      used.add(e);
+      const ed = TOPO.edges[e];
+      dfs(ed.a === v ? ed.b : ed.a, len + 1);
+      used.delete(e);
+    }
+  }
+  for (const e of mine) {
+    const ed = TOPO.edges[e];
+    for (const start of [ed.a, ed.b]) dfs(start, 0);
+  }
+  return best;
+}
+
+function updateLongestRoad(state) {
+  const lengths = state.players.map(p => longestRoadLength(state, p.id));
+  state.longestRoad.lengths = lengths;
+  const max = Math.max(...lengths);
+  const prev = state.longestRoad.holder;
+  let holder;
+  if (max < 5) holder = null;
+  else {
+    const leaders = lengths.map((l, i) => (l === max ? i : -1)).filter(i => i >= 0);
+    if (prev !== null && leaders.includes(prev)) holder = prev;
+    else holder = leaders.length === 1 ? leaders[0] : null;
+  }
+  if (holder !== prev) {
+    state.longestRoad.holder = holder;
+    if (holder !== null) log(state, `${pname(state, holder)} takes Largest Network (${max} lines).`, holder);
+    else log(state, `Largest Network is now unclaimed.`);
+  }
+}
+
+function checkWin(state) {
+  if (state.phase !== 'main') return;
+  const pid = state.current;
+  if (victoryPoints(state, pid) >= state.options.vpToWin) {
+    state.phase = 'ended';
+    state.winner = pid;
+    state.trade = null;
+    log(state, `🏆 ${pname(state, pid)} wins with ${victoryPoints(state, pid)} VP!`, pid);
+  }
+}
+
+// What the current game is waiting on, and from whom.
+function waitingOn(state) {
+  if (state.phase === 'ended') return [];
+  if (state.phase === 'setup') return [state.current];
+  if (state.turn.stage === 'discard') return Object.keys(state.turn.discards).map(Number);
+  const w = [state.current];
+  return w;
+}
+
+// ---------------------------------------------------------------- Actions
+function applyAction(state, pid, action) {
+  try {
+    doAction(state, pid, action);
+    return { ok: true };
+  } catch (e) {
+    if (e.rule) return { ok: false, error: e.message };
+    throw e;
+  }
+}
+
+function doAction(state, pid, a) {
+  if (state.phase === 'ended') fail('The game is over.');
+  if (!a || typeof a.type !== 'string') fail('Bad action');
+  if (state.phase === 'setup') return setupAction(state, pid, a);
+
+  const t = state.turn;
+  // Trade responses can come from anyone while an offer is open.
+  if (a.type === 'respondTrade') return respondTrade(state, pid, a);
+  if (a.type === 'discard') return discard(state, pid, a);
+
+  if (pid !== state.current) fail('It is not your turn.');
+  const player = state.players[pid];
+
+  if (t.stage === 'discard') fail('Waiting for players to discard.');
+  if (t.stage === 'regulator') {
+    if (a.type !== 'moveRegulator') fail('Move the Regulator first.');
+    return moveRegulator(state, pid, a.hex);
+  }
+  if (t.stage === 'steal') {
+    if (a.type !== 'steal') fail('Choose who to take a resource from.');
+    return steal(state, pid, a.target);
+  }
+  if (t.stage === 'roadBuilding') {
+    if (a.type === 'buildRoad') return buildRoad(state, pid, a.edge, true);
+    if (a.type === 'skipFreeRoads') { t.freeRoads = 0; t.stage = t.returnStage; return; }
+    fail('Place your free Fiber Lines.');
+  }
+
+  switch (a.type) {
+    case 'roll':
+      if (t.stage !== 'preroll') fail('You already rolled.');
+      return roll(state, pid, a.dice);
+    case 'playDev':
+      return playDev(state, pid, a);
+    case 'endTurn':
+      if (t.stage !== 'main') fail('Roll the dice first.');
+      return endTurn(state);
+  }
+  if (t.stage !== 'main') fail('Roll the dice first.');
+  switch (a.type) {
+    case 'buildRoad': return buildRoad(state, pid, a.edge, false);
+    case 'buildSettlement': return buildSettlement(state, pid, a.vertex);
+    case 'buildCity': return buildCity(state, pid, a.vertex);
+    case 'buyDev': return buyDev(state, pid);
+    case 'bankTrade': return bankTrade(state, pid, a);
+    case 'offerTrade': return offerTrade(state, pid, a);
+    case 'cancelTrade': state.trade = null; return;
+    case 'acceptTrade': return finalizeTrade(state, pid, a.with);
+    default: fail(`Unknown action ${a.type}`);
+  }
+  void player;
+}
+
+function setupAction(state, pid, a) {
+  const s = state.setup;
+  if (pid !== state.current) fail('It is not your turn to place.');
+  if (s.step === 'settlement') {
+    if (a.type !== 'buildSettlement') fail('Place a Data Center.');
+    const v = a.vertex;
+    if (!TOPO.vertices[v] || !vertexFree(state, v)) fail('You cannot build there (too close to another Data Center).');
+    state.buildings[v] = { owner: pid, type: 'settlement' };
+    state.players[pid].pieces.settlement--;
+    s.lastVertex = v;
+    s.step = 'road';
+    const second = s.index >= state.players.length || state.options.setupPayoutBoth;
+    let gained = [];
+    if (second) {
+      for (const h of TOPO.vertices[v].hexes) {
+        const res = TERRAIN_INFO[state.hexes[h].terrain].resource;
+        if (res && state.bank[res] > 0) { state.players[pid].resources[res]++; state.bank[res]--; gained.push(res); }
+      }
+    }
+    log(state, `${pname(state, pid)} founded a Data Center${gained.length ? ` and collected ${gained.join(', ')}` : ''}.`, pid);
+    return;
+  }
+  if (a.type !== 'buildRoad') fail('Place a Fiber Line next to your new Data Center.');
+  const legal = legalRoadEdges(state, pid, s.lastVertex);
+  if (!legal.includes(a.edge)) fail('The Fiber Line must touch the Data Center you just placed.');
+  state.roads[a.edge] = pid;
+  state.players[pid].pieces.road--;
+  s.index++;
+  s.step = 'settlement';
+  if (s.index >= s.order.length) {
+    state.phase = 'main';
+    state.current = state.firstPlayer;
+    state.turnNumber = 1;
+    state.turn = newTurn();
+    state.setup = null;
+    if (state.options.seatBonus) {
+      // Later seats in turn order get extra random starting resources to offset going last.
+      const n = state.players.length;
+      for (let k = 0; k < n; k++) {
+        const p = state.players[(state.firstPlayer + k) % n];
+        const extra = state.options.seatBonus[n]?.[k] || 0;
+        for (let i = 0; i < extra; i++) {
+          const pool = RESOURCES.flatMap(r => Array(state.bank[r]).fill(r));
+          const r = pool[randInt(state, pool.length)];
+          p.resources[r]++; state.bank[r]--;
+        }
+        if (extra) log(state, `${p.name} gets ${extra} bonus resource${extra > 1 ? 's' : ''} for playing later in the order.`, p.id);
+      }
+    }
+    if (state.options.startHand) {
+      for (const p of state.players) for (const [r, n] of Object.entries(state.options.startHand)) {
+        const k = Math.min(n, state.bank[r]); p.resources[r] += k; state.bank[r] -= k;
+      }
+    }
+    log(state, `Setup complete. ${pname(state, state.current)} takes the first turn.`);
+    startRound(state);
+  } else {
+    state.current = s.order[s.index];
+  }
+}
+
+function newTurn() {
+  return { stage: 'preroll', devPlayed: false, discards: {}, freeRoads: 0, returnStage: null, stealCandidates: [], offers: 0 };
+}
+
+function roll(state, pid, forced) {
+  let d1, d2;
+  if (Array.isArray(forced) && state.options.allowForcedDice) [d1, d2] = forced;
+  else { d1 = randInt(state, 6) + 1; d2 = randInt(state, 6) + 1; }
+  const total = d1 + d2;
+  state.lastRoll = { dice: [d1, d2], total, by: pid };
+  state.rollHistory[total]++;
+  log(state, `${pname(state, pid)} rolled ${total}.`, pid);
+  const t = state.turn;
+  if (total === 7) {
+    const discards = {};
+    for (const p of state.players) {
+      const n = handSize(p.resources);
+      if (n > state.options.discardLimit) discards[p.id] = Math.floor(n / 2);
+    }
+    t.discards = discards;
+    t.returnStage = 'main';
+    t.afterDiscard = state.headline?.effect.noRegulator ? 'main' : 'regulator';
+    if (Object.keys(discards).length) {
+      t.stage = 'discard';
+      log(state, `Regulatory audit! ${Object.keys(discards).map(id => pname(state, +id)).join(', ')} must discard half their resources.`);
+    } else if (t.afterDiscard === 'main') {
+      t.stage = 'main';
+      log(state, `A 7, but the Regulator is on vacation.`);
+    } else {
+      t.stage = 'regulator';
+      log(state, `Regulatory audit! ${pname(state, pid)} moves the Regulator.`);
+    }
+    return;
+  }
+  produce(state, total);
+  t.stage = 'main';
+}
+
+function produce(state, total) {
+  const want = state.players.map(() => emptyHand());
+  for (const h of state.hexes) {
+    if (h.number !== total || h.id === state.regulator) continue;
+    const res = TERRAIN_INFO[h.terrain].resource;
+    const mult = state.headline?.effect.produce?.[h.terrain] ?? 1;
+    for (const v of TOPO.hexes[h.id].vertices) {
+      const b = state.buildings[v];
+      if (b) want[b.owner][res] += (b.type === 'city' ? 2 : 1) * mult;
+    }
+  }
+  const parts = state.players.map(() => []);
+  for (const r of RESOURCES) {
+    const demand = want.reduce((s, w) => s + w[r], 0);
+    if (!demand) continue;
+    const claimants = want.filter(w => w[r] > 0).length;
+    if (demand > state.bank[r]) {
+      if (claimants > 1) { log(state, `The bank is short on ${r}: nobody receives it.`); continue; }
+      const pid = want.findIndex(w => w[r] > 0);
+      want[pid][r] = state.bank[r];
+    }
+    want.forEach((w, pid) => {
+      if (!w[r]) return;
+      state.players[pid].resources[r] += w[r];
+      state.players[pid].stats.produced[r] += w[r];
+      state.bank[r] -= w[r];
+      parts[pid].push(`${w[r]} ${r}`);
+    });
+  }
+  if (state.options.dryRollGrant) {
+    for (const p of state.players) {
+      if (parts[p.id].length) continue;
+      for (let i = 0; i < state.options.dryRollGrant; i++) {
+        const pool = RESOURCES.flatMap(r => Array(state.bank[r]).fill(r));
+        if (!pool.length) break;
+        const r = pool[randInt(state, pool.length)];
+        p.resources[r]++; state.bank[r]--; p.stats.produced[r]++;
+        parts[p.id].push(`1 ${r} (subsidy)`);
+      }
+    }
+  }
+  parts.forEach((p, pid) => { if (p.length) log(state, `${pname(state, pid)} gets ${p.join(', ')}.`, pid); });
+}
+
+function discard(state, pid, a) {
+  const t = state.turn;
+  if (!t || t.stage !== 'discard') fail('Nothing to discard right now.');
+  const need = t.discards[pid];
+  if (!need) fail('You do not need to discard.');
+  const res = a.resources || {};
+  let total = 0;
+  for (const r of RESOURCES) {
+    const n = res[r] || 0;
+    if (!Number.isInteger(n) || n < 0) fail('Bad discard amounts.');
+    if (n > state.players[pid].resources[r]) fail(`You do not have ${n} ${r}.`);
+    total += n;
+  }
+  if (total !== need) fail(`Discard exactly ${need} resources.`);
+  for (const r of RESOURCES) {
+    const n = res[r] || 0;
+    state.players[pid].resources[r] -= n;
+    state.bank[r] += n;
+  }
+  state.players[pid].stats.discarded += need;
+  delete t.discards[pid];
+  log(state, `${pname(state, pid)} discarded ${need}.`, pid);
+  if (!Object.keys(t.discards).length) t.stage = t.afterDiscard || 'regulator';
+}
+
+function regulatorTargets(state, pid, hex) {
+  const owners = new Set();
+  for (const v of TOPO.hexes[hex].vertices) {
+    const b = state.buildings[v];
+    if (b && b.owner !== pid && handSize(state.players[b.owner].resources) > 0) owners.add(b.owner);
+  }
+  return [...owners];
+}
+
+function protectedHex(state, pid, hex) {
+  if (!state.options.friendlyRegulator) return false;
+  for (const v of TOPO.hexes[hex].vertices) {
+    const b = state.buildings[v];
+    if (b && b.owner !== pid && victoryPoints(state, b.owner, false) <= 2) return true;
+  }
+  return false;
+}
+
+function moveRegulator(state, pid, hex) {
+  if (!state.hexes[hex]) fail('Pick a region.');
+  if (hex === state.regulator) fail('The Regulator must move to a different region.');
+  if (protectedHex(state, pid, hex) && state.hexes.some(h => h.id !== state.regulator && !protectedHex(state, pid, h.id))) {
+    fail('Friendly Regulator: that region has a player with 2 or fewer VP.');
+  }
+  state.regulator = hex;
+  const h = state.hexes[hex];
+  log(state, `${pname(state, pid)} sent the Regulator to the ${TERRAIN_INFO[h.terrain].name}${h.number ? ` (${h.number})` : ''}.`, pid);
+  const targets = regulatorTargets(state, pid, hex);
+  const t = state.turn;
+  if (targets.length === 0) { t.stage = t.returnStage; return; }
+  if (targets.length === 1) { doSteal(state, pid, targets[0]); t.stage = t.returnStage; return; }
+  t.stage = 'steal';
+  t.stealCandidates = targets;
+}
+
+function steal(state, pid, target) {
+  const t = state.turn;
+  if (!t.stealCandidates.includes(target)) fail('You cannot take from that player.');
+  doSteal(state, pid, target);
+  t.stealCandidates = [];
+  t.stage = t.returnStage;
+}
+
+function doSteal(state, pid, target) {
+  const victim = state.players[target];
+  const pool = [];
+  for (const r of RESOURCES) for (let i = 0; i < victim.resources[r]; i++) pool.push(r);
+  if (!pool.length) return;
+  const r = pool[randInt(state, pool.length)];
+  victim.resources[r]--;
+  state.players[pid].resources[r]++;
+  state.players[pid].stats.stolen++;
+  victim.stats.lostToSteal++;
+  state.lastSteal = { by: pid, from: target, resource: r, n: state.log.length };
+  log(state, `${pname(state, pid)} took a resource from ${pname(state, target)}.`, pid);
+}
+
+function buildRoad(state, pid, edge, free) {
+  const p = state.players[pid];
+  if (!TOPO.edges[edge]) fail('Pick an edge.');
+  if (p.pieces.road <= 0) fail('You have no Fiber Lines left.');
+  if (!free && !canAfford(p.resources, costOf(state, 'road'))) fail('Not enough resources for a Fiber Line.');
+  if (!legalRoadEdges(state, pid).includes(edge)) fail('A Fiber Line must connect to your network.');
+  if (!free) pay(state, p, costOf(state, 'road'));
+  state.roads[edge] = pid;
+  p.pieces.road--;
+  log(state, `${pname(state, pid)} laid a Fiber Line${free ? ' (free)' : ''}.`, pid);
+  updateLongestRoad(state);
+  if (free) {
+    const t = state.turn;
+    t.freeRoads--;
+    if (t.freeRoads <= 0 || p.pieces.road <= 0 || !legalRoadEdges(state, pid).length) { t.freeRoads = 0; t.stage = t.returnStage; }
+  }
+  checkWin(state);
+}
+
+function buildSettlement(state, pid, v) {
+  const p = state.players[pid];
+  if (!TOPO.vertices[v]) fail('Pick a site.');
+  if (p.pieces.settlement <= 0) fail('You have no Data Centers left. Upgrade one to a Campus first.');
+  if (isBanned(state, 'settlement')) fail('Zoning Moratorium: no new Data Centers this round.');
+  if (!canAfford(p.resources, costOf(state, 'settlement'))) fail('Not enough resources for a Data Center.');
+  if (!legalSettlementVertices(state, pid).includes(v)) fail('Data Centers need a free site on your network, 2+ lines from any other.');
+  pay(state, p, costOf(state, 'settlement'));
+  state.buildings[v] = { owner: pid, type: 'settlement' };
+  p.pieces.settlement--;
+  log(state, `${pname(state, pid)} built a Data Center.`, pid);
+  updateLongestRoad(state); // may cut an opponent's network
+  checkWin(state);
+}
+
+function buildCity(state, pid, v) {
+  const p = state.players[pid];
+  const b = state.buildings[v];
+  if (!b || b.owner !== pid || b.type !== 'settlement') fail('Upgrade one of your own Data Centers.');
+  if (p.pieces.city <= 0) fail('You have no Campuses left.');
+  if (!canAfford(p.resources, costOf(state, 'city'))) fail('Not enough resources for a Hyperscale Campus.');
+  pay(state, p, costOf(state, 'city'));
+  b.type = 'city';
+  p.pieces.city--;
+  p.pieces.settlement++;
+  log(state, `${pname(state, pid)} upgraded to a Hyperscale Campus.`, pid);
+  checkWin(state);
+}
+
+function buyDev(state, pid) {
+  const p = state.players[pid];
+  if (!state.devDeck.length) fail('The R&D deck is empty.');
+  if (!canAfford(p.resources, costOf(state, 'dev'))) fail('Not enough resources for an R&D card.');
+  pay(state, p, costOf(state, 'dev'));
+  const card = state.devDeck.pop();
+  p.devCards.push({ ...card, boughtTurn: state.turnNumber });
+  log(state, `${pname(state, pid)} funded R&D.`, pid);
+  checkWin(state);
+}
+
+function playableDevCards(state, pid) {
+  if (state.phase !== 'main' || state.current !== pid) return [];
+  const t = state.turn;
+  if (t.devPlayed || !['preroll', 'main'].includes(t.stage)) return [];
+  const p = state.players[pid];
+  return [...new Set(p.devCards.filter(c => c.type !== 'vp' && c.boughtTurn < state.turnNumber).map(c => c.type))];
+}
+
+function playDev(state, pid, a) {
+  const t = state.turn;
+  const p = state.players[pid];
+  if (!['preroll', 'main'].includes(t.stage)) fail('You cannot play R&D cards right now.');
+  if (t.devPlayed) fail('You can only play one R&D card per turn.');
+  const idx = p.devCards.findIndex(c => c.type === a.card && c.type !== 'vp' && c.boughtTurn < state.turnNumber);
+  if (idx < 0) fail(a.card === 'vp' ? 'Breakthroughs score automatically; you never play them.' : 'You have no playable card of that type (cards bought this turn must wait).');
+  const name = DEV_CARDS[a.card].name;
+  // Validate before consuming
+  if (a.card === 'venture') {
+    const rs = a.resources;
+    if (!Array.isArray(rs) || rs.length !== 2 || !rs.every(r => RESOURCES.includes(r))) fail('Pick 2 resources.');
+    const need = emptyHand(); rs.forEach(r => need[r]++);
+    if (!RESOURCES.every(r => state.bank[r] >= need[r])) fail('The bank does not have those.');
+  }
+  if (a.card === 'squeeze' && !RESOURCES.includes(a.resource)) fail('Name a resource.');
+  if (a.card === 'fiber' && (p.pieces.road <= 0 || !legalRoadEdges(state, pid).length)) fail('You have nowhere to build Fiber Lines.');
+
+  p.devCards.splice(idx, 1);
+  p.playedDev[a.card]++;
+  t.devPlayed = true;
+  log(state, `${pname(state, pid)} played ${name}.`, pid);
+
+  switch (a.card) {
+    case 'lobbyist': {
+      const count = p.playedDev.lobbyist;
+      const h = state.largestArmy.holder;
+      if (count >= 3 && h !== pid && (h === null || count > state.players[h].playedDev.lobbyist)) {
+        state.largestArmy.holder = pid;
+        log(state, `${pname(state, pid)} takes Most Influence (${count} Lobbyists).`, pid);
+      }
+      t.returnStage = t.stage;
+      t.stage = 'regulator';
+      break;
+    }
+    case 'fiber':
+      t.returnStage = t.stage;
+      t.stage = 'roadBuilding';
+      t.freeRoads = Math.min(2, p.pieces.road);
+      break;
+    case 'venture':
+      for (const r of a.resources) { p.resources[r]++; state.bank[r]--; }
+      log(state, `${pname(state, pid)} raised ${a.resources.join(' + ')}.`, pid);
+      break;
+    case 'squeeze': {
+      let got = 0;
+      for (const o of state.players) {
+        if (o.id === pid) continue;
+        got += o.resources[a.resource];
+        p.resources[a.resource] += o.resources[a.resource];
+        o.resources[a.resource] = 0;
+      }
+      log(state, `${pname(state, pid)} cornered the ${a.resource} market and collected ${got}.`, pid);
+      break;
+    }
+  }
+  checkWin(state);
+}
+
+function bankTrade(state, pid, a) {
+  const p = state.players[pid];
+  const { give, get } = a;
+  if (!RESOURCES.includes(give) || !RESOURCES.includes(get) || give === get) fail('Pick two different resources.');
+  const ratio = tradeRatio(state, pid, give);
+  if (p.resources[give] < ratio) fail(`You need ${ratio} ${give}.`);
+  if (state.bank[get] < 1) fail(`The bank is out of ${get}.`);
+  p.resources[give] -= ratio; state.bank[give] += ratio;
+  p.resources[get]++; state.bank[get]--;
+  p.stats.tradesBank++;
+  log(state, `${pname(state, pid)} traded ${ratio} ${give} for 1 ${get} on the market.`, pid);
+}
+
+function cleanBundle(b) {
+  const out = emptyHand();
+  if (!b || typeof b !== 'object') return out;
+  for (const r of RESOURCES) {
+    const n = b[r] || 0;
+    if (!Number.isInteger(n) || n < 0 || n > 19) fail('Bad trade amounts.');
+    out[r] = n;
+  }
+  return out;
+}
+
+function offerTrade(state, pid, a) {
+  const give = cleanBundle(a.give), get = cleanBundle(a.get);
+  if (!handSize(give) || !handSize(get)) fail('A trade needs something on both sides.');
+  if (RESOURCES.some(r => give[r] && get[r])) fail('Do not offer and ask for the same resource.');
+  if (!canAfford(state.players[pid].resources, give)) fail('You do not have what you are offering.');
+  state.turn.offers++;
+  if (state.turn.offers > 20) fail('That is enough offers for one turn.');
+  state.trade = { id: (state.trade?.id || 0) + 1, from: pid, give, get, responses: {} };
+  log(state, `${pname(state, pid)} offers ${fmtBundle(give)} for ${fmtBundle(get)}.`, pid);
+}
+
+function fmtBundle(b) {
+  return RESOURCES.filter(r => b[r]).map(r => `${b[r]} ${r}`).join(', ') || 'nothing';
+}
+
+function respondTrade(state, pid, a) {
+  const tr = state.trade;
+  if (!tr || tr.id !== a.tradeId) fail('That offer is no longer open.');
+  if (pid === tr.from) fail('You made this offer.');
+  if (a.accept && !canAfford(state.players[pid].resources, tr.get)) fail('You do not have what they are asking for.');
+  tr.responses[pid] = a.accept ? 'accept' : 'decline';
+}
+
+function finalizeTrade(state, pid, withPid) {
+  const tr = state.trade;
+  if (!tr) fail('No open offer.');
+  if (tr.responses[withPid] !== 'accept') fail('That player has not accepted.');
+  const me = state.players[pid], them = state.players[withPid];
+  if (!canAfford(me.resources, tr.give)) fail('You no longer have what you offered.');
+  if (!canAfford(them.resources, tr.get)) { tr.responses[withPid] = 'decline'; fail('They no longer have what you asked for.'); }
+  for (const r of RESOURCES) {
+    me.resources[r] += tr.get[r] - tr.give[r];
+    them.resources[r] += tr.give[r] - tr.get[r];
+  }
+  me.stats.tradesPlayer++; them.stats.tradesPlayer++;
+  log(state, `${pname(state, pid)} traded ${fmtBundle(tr.give)} to ${pname(state, withPid)} for ${fmtBundle(tr.get)}.`, pid);
+  state.trade = null;
+}
+
+function endTurn(state) {
+  state.trade = null;
+  state.current = (state.current + 1) % state.players.length;
+  state.turnNumber++;
+  state.turn = newTurn();
+  if (state.current === state.firstPlayer) startRound(state);
+  checkWin(state); // a player can reach 10 between turns (e.g. regaining Largest Network)
+}
+
+function roundNumber(state) {
+  return state.phase === 'setup' ? 0 : Math.floor((state.turnNumber - 1) / state.players.length) + 1;
+}
+
+function startRound(state) {
+  if (!state.options.headlines) return;
+  if (!state.headlineDeck.length) state.headlineDeck = shuffle(state, HEADLINES.map(h => h.id));
+  const id = state.headlineDeck.pop();
+  const h = HEADLINES.find(x => x.id === id);
+  state.headline = { id: h.id, name: h.name, text: h.text, effect: h.effect, round: roundNumber(state) };
+  state.headlineCount++;
+  log(state, `📰 Round ${roundNumber(state)} headline: ${h.name}. ${h.text}`);
+  const pub = state.players.map(p => victoryPoints(state, p.id, false));
+  if (h.effect.antitrust) {
+    const max = Math.max(...pub);
+    for (const p of state.players) {
+      if (pub[p.id] !== max) continue;
+      let lost = 0;
+      for (let i = 0; i < h.effect.antitrust; i++) {
+        const pool = RESOURCES.flatMap(r => Array(p.resources[r]).fill(r));
+        if (!pool.length) break;
+        const r = pool[randInt(state, pool.length)];
+        p.resources[r]--; state.bank[r]++; lost++;
+      }
+      log(state, `${p.name} returns ${lost} resource${lost === 1 ? '' : 's'} to the bank.`, p.id);
+    }
+  }
+  if (h.effect.grant) {
+    const min = Math.min(...pub);
+    for (const p of state.players) {
+      if (pub[p.id] !== min) continue;
+      const got = [];
+      for (let i = 0; i < h.effect.grant; i++) {
+        const pool = RESOURCES.flatMap(r => Array(state.bank[r]).fill(r));
+        if (!pool.length) break;
+        const r = pool[randInt(state, pool.length)];
+        p.resources[r]++; state.bank[r]--; got.push(r);
+      }
+      log(state, `${p.name} receives ${got.join(' + ') || 'nothing'}.`, p.id);
+    }
+  }
+}
+
+// ---------------------------------------------------------------- Views
+// What a given player is allowed to see. pid = null for spectators.
+function getView(state, pid) {
+  const v = {
+    ...state,
+    rng: undefined,
+    seed: undefined,
+    devDeck: undefined,
+    devDeckCount: state.devDeck.length,
+    headlineDeck: undefined,
+    headlineDeckCount: state.headlineDeck.length,
+    lastSteal: undefined,
+    players: state.players.map(p => {
+      const pub = {
+        id: p.id, name: p.name, color: p.color, bot: p.bot,
+        resourceCount: handSize(p.resources),
+        devCount: p.devCards.length,
+        playedDev: p.playedDev,
+        pieces: p.pieces,
+        stats: p.stats,
+        publicVP: victoryPoints(state, p.id, false),
+      };
+      if (p.id === pid || state.phase === 'ended') {
+        pub.resources = { ...p.resources };
+        pub.devCards = p.devCards.map(c => ({ ...c }));
+        pub.vp = victoryPoints(state, p.id, true);
+      }
+      return pub;
+    }),
+  };
+  if (state.lastSteal && pid !== null && (state.lastSteal.by === pid || state.lastSteal.from === pid)) {
+    v.lastSteal = state.lastSteal;
+  }
+  return JSON.parse(JSON.stringify(v));
+}
+
+return { nextRandom, TOPO, PIPS, emptyHand, handSize, canAfford, DEFAULT_OPTIONS, MODES, createGame, victoryPoints, legalSettlementVertices, legalCityVertices, legalRoadEdges, costOf, isBanned, tradeRatio, longestRoadLength, waitingOn, applyAction, protectedHex, playableDevCards, fmtBundle, roundNumber, getView };
+})();
+
+// ---- shared/bots.js
+__mods["bots"] = (() => {
+// Heuristic bot players. Used for balance simulations and to fill empty seats online.
+// Bots only read public information plus their own hand.
+
+const { RESOURCES, TERRAIN_INFO, BUILDINGS } = __mods["content"];
+const { TOPO, PIPS, canAfford, handSize, legalSettlementVertices, legalCityVertices, legalRoadEdges, tradeRatio, victoryPoints, playableDevCards, protectedHex, costOf, isBanned } = __mods["engine"];
+
+const PROFILES = {
+  balanced:   { label: 'Balanced',   w: { gpu: 1, power: 1, water: 1, steel: 1, talent: 1 }, city: 3.2, settlement: 3.2, dev: 1.6, road: 1.0, trade: 1 },
+  expander:   { label: 'Expander',   w: { gpu: 0.8, power: 1, water: 1, steel: 1.3, talent: 1.3 }, city: 2.4, settlement: 4.0, dev: 1.0, road: 1.6, trade: 1 },
+  campus:     { label: 'Campus',     w: { gpu: 1.4, power: 1.3, water: 0.8, steel: 0.9, talent: 0.9 }, city: 4.2, settlement: 2.6, dev: 1.5, road: 0.8, trade: 1 },
+  researcher: { label: 'Researcher', w: { gpu: 1.3, power: 1.2, water: 1.3, steel: 0.8, talent: 0.8 }, city: 3.0, settlement: 2.6, dev: 3.2, road: 0.8, trade: 1 },
+};
+
+
+// ---------------------------------------------------------------- evaluation
+function production(state, pid) {
+  const prod = Object.fromEntries(RESOURCES.map(r => [r, 0]));
+  for (const [v, b] of Object.entries(state.buildings)) {
+    if (b.owner !== pid) continue;
+    for (const h of TOPO.vertices[v].hexes) {
+      const hex = state.hexes[h];
+      const r = TERRAIN_INFO[hex.terrain].resource;
+      if (r && hex.number) prod[r] += PIPS[hex.number] * (b.type === 'city' ? 2 : 1);
+    }
+  }
+  return prod;
+}
+
+function vertexValue(state, pid, v, prof, prod = production(state, pid)) {
+  let val = 0;
+  const seen = new Set();
+  for (const h of TOPO.vertices[v].hexes) {
+    const hex = state.hexes[h];
+    const r = TERRAIN_INFO[hex.terrain].resource;
+    if (!r || !hex.number) continue;
+    let p = PIPS[hex.number] * prof.w[r];
+    if (h === state.regulator) p *= 0.5;
+    if (prod[r] === 0 && !seen.has(r)) p += 2.5; // diversity bonus
+    if (seen.has(r)) p *= 0.85;
+    seen.add(r);
+    val += p;
+  }
+  const port = state.ports.find(p => p.vertices.includes(v));
+  if (port) {
+    if (port.type === 'any') val += 1.5;
+    else val += Math.min(4, (prod[port.type] + (seen.has(port.type) ? 4 : 0)) * 0.35);
+  }
+  return val;
+}
+
+function deficit(hand, cost) {
+  let d = 0;
+  const miss = {};
+  for (const [r, n] of Object.entries(cost)) {
+    const m = Math.max(0, n - (hand[r] || 0));
+    if (m) { miss[r] = m; d += m; }
+  }
+  return { d, miss };
+}
+
+// BFS from my network to the best open site; returns {target, path:[edges], value}
+function roadPlan(state, pid, prof) {
+  const prod = production(state, pid);
+  const start = new Set();
+  for (const [v, b] of Object.entries(state.buildings)) if (b.owner === pid) start.add(+v);
+  for (const [e, o] of Object.entries(state.roads)) {
+    if (o !== pid) continue;
+    const ed = TOPO.edges[e];
+    for (const v of [ed.a, ed.b]) if (!state.buildings[v] || state.buildings[v].owner === pid) start.add(v);
+  }
+  const dist = new Map(), prevEdge = new Map(), prevV = new Map();
+  const q = [];
+  for (const v of start) { dist.set(v, 0); q.push(v); }
+  while (q.length) {
+    const v = q.shift();
+    const d = dist.get(v);
+    if (d >= 4) continue;
+    if (state.buildings[v] && state.buildings[v].owner !== pid) continue;
+    for (const e of TOPO.vertices[v].edges) {
+      if (state.roads[e] !== undefined) continue;
+      const ed = TOPO.edges[e];
+      const w = ed.a === v ? ed.b : ed.a;
+      if (dist.has(w)) continue;
+      dist.set(w, d + 1); prevEdge.set(w, e); prevV.set(w, v);
+      q.push(w);
+    }
+  }
+  let best = null;
+  for (const [v, d] of dist) {
+    if (d === 0) continue;
+    if (state.buildings[v] || TOPO.vertices[v].neighbors.some(n => state.buildings[n])) continue;
+    const val = vertexValue(state, pid, v, prof, prod) / (1 + 0.6 * d);
+    if (!best || val > best.value) best = { target: v, d, value: val };
+  }
+  if (!best) return null;
+  const path = [];
+  let v = best.target;
+  while (prevEdge.has(v)) { path.unshift(prevEdge.get(v)); v = prevV.get(v); }
+  best.path = path;
+  return best;
+}
+
+function bestSettlementSpot(state, pid, prof, setup = false) {
+  const prod = production(state, pid);
+  let best = null;
+  for (const v of legalSettlementVertices(state, pid, setup)) {
+    const val = vertexValue(state, pid, v, prof, prod);
+    if (!best || val > best.value) best = { v, value: val };
+  }
+  return best;
+}
+
+function bestCity(state, pid, prof) {
+  let best = null;
+  for (const v of legalCityVertices(state, pid)) {
+    const val = TOPO.vertices[v].hexes.reduce((s, h) => {
+      const hex = state.hexes[h]; const r = TERRAIN_INFO[hex.terrain].resource;
+      return s + (r && hex.number ? PIPS[hex.number] * prof.w[r] : 0);
+    }, 0);
+    if (!best || val > best.value) best = { v, value: val };
+  }
+  return best;
+}
+
+// Choose the current build goal.
+function chooseGoal(state, pid, prof) {
+  const me = state.players[pid];
+  const hand = me.resources;
+  const goals = [];
+  const city = me.pieces.city > 0 ? bestCity(state, pid, prof) : null;
+  if (city) goals.push({ kind: 'city', cost: costOf(state, 'city'), base: prof.city + city.value * 0.12, v: city.v });
+  const spot = me.pieces.settlement > 0 && !isBanned(state, 'settlement') ? bestSettlementSpot(state, pid, prof) : null;
+  if (spot) goals.push({ kind: 'settlement', cost: costOf(state, 'settlement'), base: prof.settlement + spot.value * 0.12, v: spot.v });
+  else if (me.pieces.settlement > 0 && me.pieces.road > 0 && !legalSettlementVertices(state, pid).length) {
+    const plan = roadPlan(state, pid, prof);
+    if (plan && plan.path.length) {
+      goals.push({ kind: 'road', cost: costOf(state, 'road'), base: prof.road + prof.settlement * 0.35 + plan.value * 0.05 - plan.d * 0.2, edge: plan.path[0] });
+    }
+  }
+  if (state.devDeck === undefined ? state.devDeckCount > 0 : state.devDeck.length > 0) {
+    goals.push({ kind: 'dev', cost: costOf(state, 'dev'), base: prof.dev });
+  }
+  // Late game: chase Largest Network if close
+  if (me.pieces.road > 0) {
+    const lr = state.longestRoad;
+    const mine = lr.lengths?.[pid] || 0;
+    const holderLen = lr.holder !== null ? lr.lengths[lr.holder] : 4;
+    if (lr.holder !== pid && mine >= 3 && holderLen - mine <= 2) {
+      const edges = legalRoadEdges(state, pid);
+      if (edges.length) goals.push({ kind: 'road', cost: costOf(state, 'road'), base: prof.road + 1.2, edge: pickLongRoadEdge(state, pid, edges) });
+    }
+  }
+  for (const g of goals) {
+    const { d } = deficit(hand, g.cost);
+    g.score = g.base - 1.1 * d;
+  }
+  goals.sort((a, b) => b.score - a.score);
+  return goals;
+}
+
+function pickLongRoadEdge(state, pid, edges) {
+  // Prefer edges that extend the current longest chain.
+  let best = edges[0], bestLen = -1;
+  for (const e of edges.slice(0, 30)) {
+    state.roads[e] = pid;
+    const len = longest(state, pid);
+    delete state.roads[e];
+    if (len > bestLen) { bestLen = len; best = e; }
+  }
+  return best;
+}
+const { longestRoadLength: longest } = __mods["engine"];
+
+// ---------------------------------------------------------------- decisions
+function botAction(state, pid, profileName = 'balanced') {
+  const prof = PROFILES[profileName] || PROFILES.balanced;
+  if (state.phase === 'ended') return null;
+
+  if (state.phase === 'setup') {
+    if (state.current !== pid) return null;
+    if (state.setup.step === 'settlement') {
+      const best = bestSettlementSpot(state, pid, prof, true);
+      return { type: 'buildSettlement', vertex: best.v };
+    }
+    // Road towards the best open spot near the new settlement.
+    const from = state.setup.lastVertex;
+    const edges = legalRoadEdges(state, pid, from);
+    let best = edges[0], bestVal = -1;
+    for (const e of edges) {
+      const ed = TOPO.edges[e];
+      const w = ed.a === from ? ed.b : ed.a;
+      for (const x of TOPO.vertices[w].neighbors) {
+        if (x === from) continue;
+        if (state.buildings[x] || TOPO.vertices[x].neighbors.some(n => state.buildings[n])) continue;
+        const val = vertexValue(state, pid, x, prof);
+        if (val > bestVal) { bestVal = val; best = e; }
+      }
+    }
+    return { type: 'buildRoad', edge: best };
+  }
+
+  const t = state.turn;
+  const me = state.players[pid];
+
+  if (t.stage === 'discard') {
+    if (!t.discards[pid]) return null;
+    return { type: 'discard', resources: chooseDiscard(state, pid, prof, t.discards[pid]) };
+  }
+
+  // Respond to someone else's open trade offer.
+  if (state.trade && state.trade.from !== pid) {
+    if (state.trade.responses[pid]) return null;
+    return { type: 'respondTrade', tradeId: state.trade.id, accept: shouldAccept(state, pid, prof) };
+  }
+  if (state.current !== pid) return null;
+
+  if (t.stage === 'regulator') return { type: 'moveRegulator', hex: chooseRegulatorHex(state, pid) };
+  if (t.stage === 'steal') {
+    const c = [...t.stealCandidates].sort((a, b) => victoryPoints(state, b, false) - victoryPoints(state, a, false) ||
+      handSize(state.players[b].resources) - handSize(state.players[a].resources));
+    return { type: 'steal', target: c[0] };
+  }
+  if (t.stage === 'roadBuilding') {
+    const plan = roadPlan(state, pid, prof);
+    const legal = legalRoadEdges(state, pid);
+    if (!legal.length) return { type: 'skipFreeRoads' };
+    const e = plan && plan.path.length && legal.includes(plan.path[0]) ? plan.path[0] : pickLongRoadEdge(state, pid, legal);
+    return { type: 'buildRoad', edge: e };
+  }
+
+  const playable = playableDevCards(state, pid);
+  if (t.stage === 'preroll') {
+    if (playable.includes('lobbyist') && (regulatorHurtsMe(state, pid) || armyWithin(state, pid))) {
+      return { type: 'playDev', card: 'lobbyist' };
+    }
+    return { type: 'roll' };
+  }
+
+  // ---- main stage
+  if (state.trade && state.trade.from === pid) {
+    const acc = Object.entries(state.trade.responses).filter(([, r]) => r === 'accept').map(([p]) => +p);
+    if (acc.length) {
+      acc.sort((a, b) => victoryPoints(state, a, false) - victoryPoints(state, b, false));
+      return { type: 'acceptTrade', with: acc[0] };
+    }
+    const humansPending = state.players.some(p => p.id !== pid && !state.trade.responses[p.id]);
+    if (humansPending) return null; // wait (server times out offers)
+    return { type: 'cancelTrade' };
+  }
+
+  // Bots keep no memory outside the game state (it may be cloned between moves).
+  const hand = me.resources;
+
+  // Dev cards in main phase
+  if (playable.length && !t.devPlayed) {
+    const dev = chooseDevPlay(state, pid, prof, playable);
+    if (dev) return dev;
+  }
+
+  const goals = chooseGoal(state, pid, prof);
+  // Build anything affordable in goal order (top goal first).
+  for (const g of goals) {
+    if (!canAfford(hand, g.cost)) continue;
+    // Do not spend top-goal resources on a lower goal if the top goal is close.
+    if (g !== goals[0]) {
+      const top = goals[0];
+      const after = { ...hand };
+      for (const [r, n] of Object.entries(g.cost)) after[r] -= n;
+      if (deficit(after, top.cost).d > deficit(hand, top.cost).d && deficit(hand, top.cost).d <= 1) continue;
+      if (g.kind === 'road' && g.score < 0.5) continue;
+    }
+    if (g.kind === 'city') return { type: 'buildCity', vertex: g.v };
+    if (g.kind === 'settlement') return { type: 'buildSettlement', vertex: g.v };
+    if (g.kind === 'road') return { type: 'buildRoad', edge: g.edge };
+    if (g.kind === 'dev') return { type: 'buyDev' };
+  }
+
+  // Trade toward the top goal(s).
+  for (const goal of goals.slice(0, 2)) {
+    const { miss } = deficit(hand, goal.cost);
+    const bank = bankTradeToward(state, pid, goal.cost);
+    if (bank) return bank;
+    if (t.offers < 1 && deficit(hand, goal.cost).d === 1) {
+      const offer = playerOffer(state, pid, goal.cost, miss);
+      if (offer) return offer;
+    }
+  }
+
+  // Too many cards: dump surplus into something useful rather than risk an audit.
+  if (handSize(hand) > state.options.discardLimit && goals[0]) {
+    const dump = bankTradeToward(state, pid, goals[0].cost, true);
+    if (dump) return dump;
+  }
+  return { type: 'endTurn' };
+}
+
+function bankTradeToward(state, pid, cost, partial = false) {
+  const hand = state.players[pid].resources;
+  const { miss } = deficit(hand, cost);
+  const missing = Object.keys(miss);
+  if (!missing.length) return null;
+  // surplus beyond the goal cost
+  const surplus = {};
+  let capacity = 0;
+  for (const r of RESOURCES) {
+    const extra = hand[r] - (cost[r] || 0);
+    const ratio = tradeRatio(state, pid, r);
+    if (extra >= ratio) { surplus[r] = { extra, ratio }; capacity += Math.floor(extra / ratio); }
+  }
+  const need = missing.reduce((s, r) => s + miss[r], 0);
+  if (!partial && capacity < need) return null;
+  if (capacity < 1) return null;
+  const give = Object.entries(surplus).sort((a, b) => a[1].ratio - b[1].ratio || b[1].extra - a[1].extra)[0][0];
+  const get = missing.find(r => state.bank[r] > 0);
+  if (!get) return null;
+  return { type: 'bankTrade', give, get };
+}
+
+function playerOffer(state, pid, cost, miss) {
+  const hand = state.players[pid].resources;
+  const want = Object.keys(miss)[0];
+  if (!want) return null;
+  const spare = RESOURCES.filter(r => r !== want && hand[r] - (cost[r] || 0) > 0)
+    .sort((a, b) => (hand[b] - (cost[b] || 0)) - (hand[a] - (cost[a] || 0)));
+  if (!spare.length) return null;
+  const give = { [spare[0]]: 1 };
+  // Sweeten if we have lots
+  if (hand[spare[0]] - (cost[spare[0]] || 0) >= 3) give[spare[0]] = 2;
+  return { type: 'offerTrade', give, get: { [want]: 1 } };
+}
+
+function shouldAccept(state, pid, prof) {
+  const tr = state.trade;
+  const me = state.players[pid];
+  if (!canAfford(me.resources, tr.get)) return false;
+  if (victoryPoints(state, tr.from, false) >= state.options.vpToWin - 2) return false;
+  const goals = chooseGoal(state, pid, prof);
+  if (!goals.length) return false;
+  const goal = goals[0];
+  const after = { ...me.resources };
+  for (const r of RESOURCES) after[r] += (tr.give[r] || 0) - (tr.get[r] || 0);
+  const before = deficit(me.resources, goal.cost).d;
+  const now = deficit(after, goal.cost).d;
+  const giving = handSize(tr.get), getting = handSize(tr.give);
+  return now < before && getting >= giving;
+}
+
+function chooseDiscard(state, pid, prof, n) {
+  const hand = { ...state.players[pid].resources };
+  const goals = chooseGoal(state, pid, prof);
+  const keep = goals[0] ? goals[0].cost : {};
+  const out = Object.fromEntries(RESOURCES.map(r => [r, 0]));
+  for (let i = 0; i < n; i++) {
+    let pick = null, best = -Infinity;
+    for (const r of RESOURCES) {
+      if (hand[r] <= 0) continue;
+      const score = hand[r] - (keep[r] || 0) * 1.5 - prof.w[r] * 0.5;
+      if (score > best) { best = score; pick = r; }
+    }
+    hand[pick]--; out[pick]++;
+  }
+  return out;
+}
+
+function regulatorHurtsMe(state, pid) {
+  const h = state.regulator;
+  const hex = state.hexes[h];
+  if (!hex.number) return false;
+  return TOPO.hexes[h].vertices.some(v => state.buildings[v]?.owner === pid) && PIPS[hex.number] >= 3;
+}
+
+function armyWithin(state, pid) {
+  const me = state.players[pid];
+  const h = state.largestArmy.holder;
+  if (h === pid) return false;
+  const need = h === null ? 3 : state.players[h].playedDev.lobbyist + 1;
+  return me.playedDev.lobbyist + 1 >= need;
+}
+
+function chooseRegulatorHex(state, pid) {
+  let best = null, bestScore = -Infinity;
+  const leaderVP = Math.max(...state.players.filter(p => p.id !== pid).map(p => victoryPoints(state, p.id, false)));
+  for (const hex of state.hexes) {
+    if (hex.id === state.regulator) continue;
+    if (protectedHex(state, pid, hex.id)) continue;
+    let score = 0;
+    const pips = hex.number ? PIPS[hex.number] : 0;
+    for (const v of TOPO.hexes[hex.id].vertices) {
+      const b = state.buildings[v];
+      if (!b) continue;
+      const mult = b.type === 'city' ? 2 : 1;
+      if (b.owner === pid) score -= 3 * pips * mult;
+      else {
+        const vp = victoryPoints(state, b.owner, false);
+        score += pips * mult * (1 + vp / 5) + (vp === leaderVP ? 2 : 0) + (handSize(state.players[b.owner].resources) > 0 ? 1 : 0);
+      }
+    }
+    if (score > bestScore) { bestScore = score; best = hex.id; }
+  }
+  if (best === null) best = state.hexes.find(h => h.id !== state.regulator).id;
+  return best;
+}
+
+function chooseDevPlay(state, pid, prof, playable) {
+  const me = state.players[pid];
+  const hand = me.resources;
+  const goals = chooseGoal(state, pid, prof);
+  const goal = goals[0];
+  if (playable.includes('lobbyist') && (regulatorHurtsMe(state, pid) || armyWithin(state, pid))) {
+    return { type: 'playDev', card: 'lobbyist' };
+  }
+  if (playable.includes('fiber') && me.pieces.road >= 1 && legalRoadEdges(state, pid).length) {
+    const plan = roadPlan(state, pid, prof);
+    if (plan && plan.path.length && !legalSettlementVertices(state, pid).length) return { type: 'playDev', card: 'fiber' };
+    const lr = state.longestRoad;
+    if (lr.holder !== pid && (lr.lengths?.[pid] || 0) >= 3) return { type: 'playDev', card: 'fiber' };
+  }
+  if (playable.includes('venture') && goal) {
+    const { d, miss } = deficit(hand, goal.cost);
+    if (d >= 1 && d <= 2) {
+      const rs = [];
+      for (const [r, n] of Object.entries(miss)) for (let i = 0; i < n; i++) rs.push(r);
+      while (rs.length < 2) rs.push(Object.keys(goal.cost)[0]);
+      if (rs.every(r => state.bank[r] >= rs.filter(x => x === r).length)) return { type: 'playDev', card: 'venture', resources: rs.slice(0, 2) };
+    }
+  }
+  if (playable.includes('squeeze') && goal) {
+    const others = state.players.filter(p => p.id !== pid).reduce((s, p) => s + handSize(p.resources), 0);
+    const { miss } = deficit(hand, goal.cost);
+    const r = Object.keys(miss).sort((a, b) => miss[b] - miss[a])[0];
+    if (r && others >= 10) return { type: 'playDev', card: 'squeeze', resource: r };
+  }
+  if (playable.includes('lobbyist') && me.devCards.filter(c => c.type === 'lobbyist').length >= 2) {
+    return { type: 'playDev', card: 'lobbyist' };
+  }
+  return null;
+}
+
+return { PROFILES, botAction };
+})();
+
+// ---- shared/rooms.js
+__mods["rooms"] = (() => {
+// Table (room) logic shared by the Node server and the hosted artifact version.
+// A room is plain JSON: seats, options, chat and the engine state. Every change
+// goes through roomVerb() so both hosts enforce the same rules.
+
+const { createGame, applyAction, getView, MODES } = __mods["engine"];
+const { botAction, PROFILES } = __mods["bots"];
+const { PLAYER_COLORS } = __mods["content"];
+
+const BOT_NAMES = ['Ada', 'Turing', 'Hopper', 'Lovelace', 'Shannon', 'Babbage', 'Knuth', 'Dijkstra'];
+const CODE_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+
+function randomInt(n) {
+  const a = new Uint32Array(1);
+  globalThis.crypto.getRandomValues(a);
+  return a[0] % n;
+}
+function newCode() {
+  let c = '';
+  for (let i = 0; i < 5; i++) c += CODE_CHARS[randomInt(CODE_CHARS.length)];
+  return c;
+}
+const cleanName = n => String(n || '').replace(/[\u0000-\u001f<>]/g, '').trim().slice(0, 20) || 'Player';
+
+function newRoom({ code, hostId, hostName, now = Date.now() }) {
+  return {
+    code, createdAt: now, updatedAt: now, version: 0,
+    hostId,
+    seats: [{ id: hostId, name: cleanName(hostName), bot: null, color: PLAYER_COLORS[0] }],
+    options: { mode: 'quick', headlines: true, friendlyRegulator: false },
+    game: null, chat: [], gameNumber: 0, tradeOpenedAt: null,
+  };
+}
+
+const seatOf = (room, id) => (id ? room.seats.findIndex(s => s.id && s.id === id) : -1);
+
+function effectiveOptions(room) {
+  const mode = MODES[room.options.mode] || MODES.quick;
+  const { label, ...rules } = mode;
+  void label;
+  const o = { ...rules, headlines: room.options.headlines, friendlyRegulator: room.options.friendlyRegulator, mode: room.options.mode };
+  if (room.options.mode === 'classic' && room.seats.length === 2) o.vpToWin = 8;
+  return o;
+}
+
+// What a client needs about the table. `connected` is a Set of ids currently online, or null if unknown.
+function lobbyInfo(room, id, connected = null) {
+  return {
+    code: room.code,
+    host: seatOf(room, room.hostId),
+    you: seatOf(room, id),
+    isHost: !!id && id === room.hostId,
+    seats: room.seats.map((s, i) => ({
+      name: s.name, bot: s.bot, color: s.color, seat: i,
+      connected: s.bot ? true : connected ? connected.has(s.id) : true,
+    })),
+    options: effectiveOptions(room),
+    started: !!room.game,
+    gameNumber: room.gameNumber,
+    chat: room.chat.slice(-50),
+  };
+}
+
+function viewFor(room, id) {
+  if (!room.game) return null;
+  const seat = seatOf(room, id);
+  const v = getView(room.game, seat >= 0 ? seat : null);
+  v.log = v.log.slice(-120);
+  if (room.game.trade) v.trade.openedAt = room.tradeOpenedAt;
+  return v;
+}
+
+const ok = () => ({ ok: true });
+const err = error => ({ ok: false, error });
+const inProgress = room => room.game && room.game.phase !== 'ended';
+
+function usedColor(room) {
+  const used = new Set(room.seats.map(s => s.color));
+  return PLAYER_COLORS.find(c => !used.has(c));
+}
+
+// Apply one table action by `id`. Mutates room. Returns {ok} or {ok:false,error}.
+function roomVerb(room, id, verb, body = {}, now = Date.now()) {
+  const seat = seatOf(room, id);
+  const isHost = !!id && id === room.hostId;
+  switch (verb) {
+    case 'join': {
+      if (seat >= 0) return ok();
+      if (room.game) return err('That game has already started. Ask the host for a rematch to join.');
+      if (room.seats.length >= 4) return err('That game is full (4 players).');
+      room.seats.push({ id, name: cleanName(body.name), bot: null, color: usedColor(room) });
+      return ok();
+    }
+    case 'leave': {
+      if (seat < 0 || isHost) return err('The host cannot leave the table.');
+      if (room.game) return err('Leave after the game ends.');
+      room.seats.splice(seat, 1);
+      return ok();
+    }
+    case 'addBot': {
+      if (!isHost) return err('Only the host can add bots.');
+      if (inProgress(room)) return err('Game in progress.');
+      if (room.seats.length >= 4) return err('The table is full.');
+      const profile = PROFILES[body.profile] ? body.profile : 'balanced';
+      const name = BOT_NAMES.find(n => !room.seats.some(s => s.name.startsWith(n))) || 'Bot';
+      room.seats.push({ id: null, name: `${name} (bot)`, bot: profile, color: usedColor(room) });
+      return ok();
+    }
+    case 'removeSeat': {
+      if (!isHost) return err('Only the host can remove players.');
+      if (inProgress(room)) return err('Game in progress.');
+      const i = +body.seat;
+      if (!room.seats[i] || room.seats[i].id === room.hostId) return err('Cannot remove that seat.');
+      room.seats.splice(i, 1);
+      room.game = null;
+      return ok();
+    }
+    case 'options': {
+      if (!isHost) return err('Only the host can change options.');
+      if (inProgress(room)) return err('Game in progress.');
+      const o = body.options || {};
+      if (o.mode !== undefined && MODES[o.mode]) room.options.mode = o.mode;
+      if (o.friendlyRegulator !== undefined) room.options.friendlyRegulator = !!o.friendlyRegulator;
+      if (o.headlines !== undefined) room.options.headlines = !!o.headlines;
+      return ok();
+    }
+    case 'start': {
+      if (!isHost) return err('Only the host can start.');
+      if (inProgress(room)) return err('Game already running.');
+      if (room.seats.length < 2) return err('Need at least 2 players (add a bot?).');
+      const players = room.seats.map(s => ({ name: s.name, bot: s.bot, color: s.color }));
+      room.game = createGame({ players, seed: randomInt(2 ** 31), options: effectiveOptions(room) });
+      room.gameNumber++;
+      room.tradeOpenedAt = null;
+      return ok();
+    }
+    case 'action': {
+      if (!room.game) return err('The game has not started.');
+      if (seat < 0) return err('You are not seated in this game.');
+      const r = applyAction(room.game, seat, body.action);
+      if (r.ok && body.action?.type === 'offerTrade') room.tradeOpenedAt = now;
+      return r;
+    }
+    case 'chat': {
+      if (seat < 0) return err('Join the game to chat.');
+      const text = String(body.text || '').replace(/[\u0000-\u001f]/g, '').trim().slice(0, 300);
+      if (!text) return err('Empty message.');
+      room.chat.push({ seat, name: room.seats[seat].name, text, at: now });
+      if (room.chat.length > 100) room.chat.splice(0, room.chat.length - 100);
+      return ok();
+    }
+    case 'rename': {
+      if (seat < 0) return err('Not seated.');
+      room.seats[seat].name = cleanName(body.name);
+      if (room.game) room.game.players[seat].name = room.seats[seat].name;
+      return ok();
+    }
+    case 'botify': {
+      if (!isHost) return err('Only the host can do that.');
+      const i = +body.seat;
+      const target = room.seats[i];
+      if (!room.game || !target || target.bot || target.id === room.hostId) return err('Cannot replace that seat.');
+      target.bot = 'balanced';
+      target.id = null;
+      target.name = `${target.name} (bot)`.slice(0, 26);
+      room.game.players[i].bot = 'balanced';
+      room.game.players[i].name = target.name;
+      return ok();
+    }
+  }
+  return err('Unknown request.');
+}
+
+// One bot move, if any bot has one. Returns {acted:true}, or {acted:false, waitMs} when a
+// bot's trade offer is waiting on humans, or {acted:false} when no bot needs to act.
+function botStep(room, now = Date.now(), tradeWaitMs = 10000) {
+  const g = room.game;
+  if (!g || g.phase === 'ended') return { acted: false };
+  for (const [i, seat] of room.seats.entries()) {
+    if (!seat.bot) continue;
+    let a;
+    try { a = botAction(g, i, seat.bot); } catch (e) { console.error('bot error', e); continue; }
+    if (!a) continue;
+    const res = applyAction(g, i, a);
+    if (!res.ok) {
+      console.error(`bot ${i} illegal ${JSON.stringify(a)}: ${res.error}`);
+      if (g.current === i && g.turn?.stage === 'main') applyAction(g, i, { type: 'endTurn' });
+    } else if (a.type === 'offerTrade') room.tradeOpenedAt = now;
+    return { acted: true };
+  }
+  // A bot's trade offer waiting on humans: give up after a while.
+  if (g.trade && room.seats[g.trade.from]?.bot) {
+    const waited = now - (room.tradeOpenedAt || 0);
+    if (waited >= tradeWaitMs) {
+      const acc = Object.entries(g.trade.responses).find(([, r]) => r === 'accept');
+      applyAction(g, g.trade.from, acc ? { type: 'acceptTrade', with: +acc[0] } : { type: 'cancelTrade' });
+      return { acted: true };
+    }
+    return { acted: false, waitMs: tradeWaitMs - waited };
+  }
+  return { acted: false };
+}
+
+// Lightweight listing entry for lobbies ("open tables").
+function tableSummary(room) {
+  return {
+    code: room.code,
+    host: room.seats.find(s => s.id === room.hostId)?.name || 'Host',
+    players: room.seats.map(s => s.name),
+    seatIds: room.seats.map(s => s.id).filter(Boolean),
+    status: !room.game ? 'lobby' : room.game.phase === 'ended' ? 'ended' : 'playing',
+    mode: room.options.mode,
+    updatedAt: room.updatedAt,
+  };
+}
+
+return { BOT_NAMES, newCode, cleanName, newRoom, seatOf, effectiveOptions, lobbyInfo, viewFor, roomVerb, botStep, tableSummary };
+})();
+
+// ---- public/transport-server.js
+__mods["transport-server"] = (() => {
+// Transport for the self-hosted Node server: POST for actions, Server-Sent Events for state.
+function serverTransport() {
+  let code = null, token = null, es = null, onUpdate = () => {};
+  const storeKey = c => `hyperscale:${c}`;
+  const saveToken = () => { try { localStorage.setItem(storeKey(code), token); } catch { /* private mode */ } };
+  const loadToken = c => { try { return localStorage.getItem(storeKey(c)); } catch { return null; } };
+
+  async function post(path, body = {}) {
+    const res = await fetch(`/api/rooms${path}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...body, token }) });
+    const data = await res.json().catch(() => ({ error: 'Server error' }));
+    if (!res.ok) throw new Error(data.error || 'Request failed');
+    return data;
+  }
+  // Updates arrive over Server-Sent Events (Node server) or a WebSocket (Cloudflare build).
+  function connect() {
+    if (es) es.close();
+    const q = `token=${encodeURIComponent(token || '')}`;
+    if (globalThis.HYPERSCALE_WS) return openSocket(`${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/api/rooms/${code}/ws?${q}`);
+    es = new EventSource(`/api/rooms/${code}/events?${q}`);
+    es.onmessage = ev => onUpdate(JSON.parse(ev.data));
+  }
+  function openSocket(url, delay = 500) {
+    const ws = new WebSocket(url);
+    let opened = false;
+    es = { close() { ws.onclose = null; ws.close(); } };
+    ws.onopen = () => { opened = true; };
+    ws.onmessage = ev => onUpdate(JSON.parse(ev.data));
+    // Reconnect after drops (phone sleep, network change), backing off while the server is unreachable.
+    ws.onclose = () => setTimeout(() => { if (es?.close) openSocket(url, opened ? 500 : Math.min(delay * 2, 8000)); }, opened ? 500 : delay);
+  }
+  return {
+    hosted: false,
+    async init(cb) {
+      onUpdate = cb;
+      const m = location.pathname.match(/^\/r\/([A-Za-z0-9]{5})/);
+      if (!m) return { screen: 'home' };
+      code = m[1].toUpperCase();
+      token = loadToken(code);
+      if (token) { connect(); return { screen: 'room' }; }
+      return { screen: 'home', code }; // not seated yet: ask for a name, then join
+    },
+    async create(name) {
+      const res = await fetch('/api/rooms', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name }) });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      code = data.code; token = data.token; saveToken();
+      history.pushState({}, '', `/r/${code}`);
+      connect();
+    },
+    async join(c, name) {
+      code = c; token = loadToken(c);
+      try {
+        const data = await post(`/${c}/join`, { name });
+        token = data.token; saveToken();
+      } catch (e) {
+        if (!/already started/.test(e.message)) throw e;
+        token = null; // started games can still be watched
+        e.spectating = true;
+        history.pushState({}, '', `/r/${code}`);
+        connect();
+        throw e;
+      }
+      history.pushState({}, '', `/r/${code}`);
+      connect();
+    },
+    call: (verb, body) => post(`/${code}/${verb}`, body),
+    shareLink: c => `${location.origin}/r/${c}`,
+    watchTables: null,
+    leaveTable() { if (es) es.close(); es = null; code = null; history.pushState({}, '', '/'); },
+  };
+}
+
+return { serverTransport };
+})();
+
+// ---- public/transport-artifact.js
+__mods["transport-artifact"] = (() => {
+// Transport for the hosted claude.ai artifact. Each table is one document in the
+// artifact's shared database (games/<CODE>), with a small listing in tables/<CODE>.
+// Every change runs the shared table logic locally under a short lease on the
+// document, so two players acting at once never overwrite each other. Bots are run
+// by one seated player's browser (the host, or the first seated player who is online);
+// the others step in only if the table sits idle.
+const { newRoom, newCode, roomVerb, botStep, lobbyInfo, viewFor, tableSummary } = __mods["rooms"];
+
+const BOT_DELAY = 600;
+const BOT_BACKUP_DELAY = 4000;
+const BOT_TRADE_WAIT = 10000;
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+function artifactTransport() {
+  let db = null, user = null, room = null, uid = null;
+  const tabId = Math.random().toString(36).slice(2, 10);
+  let code = null, doc = null, unsub = null, onUpdate = () => {}, peers = [], botTimer = null;
+  let lastKey = 'hyperscale:last';
+
+  const ref = c => db.doc(`games/${c}`);
+  const tableRef = c => db.doc(`tables/${c}`);
+
+  function emit() {
+    if (!doc) return;
+    let connected = null;
+    if (room) {
+      connected = new Set([uid]);
+      for (const p of peers) if (p.presence?.game === code && p.presence?.uid) connected.add(p.presence.uid);
+    }
+    onUpdate({ lobby: lobbyInfo(doc, uid, connected), game: viewFor(doc, uid) });
+  }
+
+  // Apply fn(room) to the latest copy of the table under a lease, then save it.
+  // Changes from this tab run one at a time (the lease is per tab, so it cannot
+  // separate this tab's own bot step from its player's click).
+  let queue = Promise.resolve();
+  function mutate(c, fn) {
+    const run = queue.then(() => mutateNow(c, fn));
+    queue = run.catch(() => {});
+    return run;
+  }
+  async function mutateNow(c, fn) {
+    const r0 = ref(c);
+    for (let attempt = 0; attempt < 30; attempt++) {
+      let lease;
+      try { lease = await r0.acquire({ holder: `${uid}:${tabId}`, ttlMs: 1000 }); }
+      catch (e) { if (e.code === 'unavailable' || e.code === 'resource_exhausted') { await sleep(300 + Math.random() * 400); continue; } throw friendly(e); }
+      if (!lease.acquired) { await sleep(120 + Math.random() * 300); continue; }
+      const snap = await r0.get();
+      if (!snap.exists) return { ok: false, error: 'That table no longer exists.' };
+      const r = structuredClone(snap.data());
+      const before = JSON.stringify(tableSummary(r));
+      const res = fn(r);
+      if (!res.ok) return res;
+      r.version = (r.version || 0) + 1;
+      r.updatedAt = Date.now();
+      try {
+        await r0.set(r);
+        const summary = tableSummary(r);
+        if (JSON.stringify(summary) !== before || r.version % 20 === 0) await tableRef(c).set(summary);
+      } catch (e) { throw friendly(e); }
+      return res;
+    }
+    return { ok: false, error: 'The table is busy. Try again in a moment.' };
+  }
+
+  function friendly(e) {
+    if (e.code === 'invalid_argument') return new Error('You can watch this table, but you do not have permission to play. Ask the host to share the game with you with permission to play.');
+    if (e.code === 'quota_exceeded') return new Error('This game server is full. Ask the host to delete old tables.');
+    return new Error(e.message || 'Something went wrong. Try again.');
+  }
+
+  // The browser that runs the bots: the host if online, else the first seated player online.
+  function isBotDriver() {
+    const online = new Set([uid]);
+    for (const p of peers) if (p.presence?.game === code && p.presence?.uid) online.add(p.presence.uid);
+    const humans = doc.seats.filter(s => s.id);
+    const driver = humans.find(s => s.id === doc.hostId && online.has(s.id)) || humans.find(s => online.has(s.id));
+    return driver?.id === uid;
+  }
+
+  function scheduleBots(delay) {
+    clearTimeout(botTimer);
+    if (!doc || !doc.game || doc.game.phase === 'ended') return;
+    if (!doc.seats.some(s => s.id === uid)) return; // only seated players drive bots
+    if (!doc.seats.some(s => s.bot)) return;
+    if (delay === undefined) delay = isBotDriver() ? BOT_DELAY : BOT_BACKUP_DELAY;
+    const version = doc.version;
+    const c = code;
+    botTimer = setTimeout(async () => {
+      let wait = 0, idle = false;
+      const res = await mutate(c, r => {
+        if (r.version !== version) return { ok: false, stale: true };
+        const step = botStep(r, Date.now(), BOT_TRADE_WAIT);
+        if (!step.acted) { idle = true; wait = step.waitMs || 0; return { ok: false }; }
+        return { ok: true };
+      }).catch(() => ({ ok: false }));
+      if (res.ok || code !== c || doc?.version !== version) return; // the new snapshot reschedules
+      if (wait) scheduleBots(Math.min(1000, wait));
+      else if (!idle) scheduleBots(1500); // busy or failed: try again
+    }, delay);
+  }
+
+  function open(c) {
+    if (unsub) unsub();
+    code = c;
+    try { localStorage.setItem(lastKey, c); } catch { /* ignore */ }
+    if (room) room.presence({ game: c, uid }).catch(() => {});
+    return new Promise(resolve => {
+      let first = true;
+      unsub = ref(c).onSnapshot(snap => {
+        if (!snap.exists) { if (first) { first = false; resolve(false); } return; }
+        doc = snap.data();
+        emit();
+        scheduleBots();
+        if (first) { first = false; resolve(true); }
+      }, () => { if (first) { first = false; resolve(false); } });
+    });
+  }
+
+  return {
+    hosted: true,
+    async init(cb) {
+      onUpdate = cb;
+      const c = globalThis.claude;
+      if (!c?.use) return { screen: 'error', error: 'Open this game from its claude.ai link to play.' };
+      [db, user, room] = await Promise.all([c.use('db'), c.use('user'), c.use('room')]);
+      if (!db || !user) return { screen: 'error', error: 'Sign in to claude.ai to play. You can only watch while signed out.' };
+      uid = await user.id();
+      if (!uid) return { screen: 'error', error: 'Sign in to claude.ai to play.' };
+      lastKey = `hyperscale:last:${uid}`;
+      if (room) room.onPeers(list => { peers = list; emit(); });
+      let last = null;
+      try { last = localStorage.getItem(lastKey); } catch { /* ignore */ }
+      if (last && await open(last)) return { screen: 'room' };
+      return { screen: 'home' };
+    },
+    async create(name) {
+      let c;
+      for (let i = 0; i < 5; i++) { c = newCode(); if (!(await ref(c).get()).exists) break; }
+      const r = newRoom({ code: c, hostId: uid, hostName: name });
+      r.version = 1;
+      try {
+        await ref(c).set(r);
+        await tableRef(c).set(tableSummary(r));
+      } catch (e) { throw friendly(e); }
+      await open(c);
+    },
+    async join(c, name) {
+      const snap = await ref(c).get();
+      if (!snap.exists) throw new Error('No game with that code. Check the code or create a new game.');
+      const already = snap.data().seats.some(s => s.id === uid);
+      if (!already) {
+        const res = await mutate(c, r => roomVerb(r, uid, 'join', { name }));
+        if (!res.ok) {
+          const e = new Error(res.error);
+          if (/already started/.test(res.error)) { e.spectating = true; await open(c); }
+          throw e;
+        }
+      }
+      await open(c);
+    },
+    async call(verb, body) {
+      const res = await mutate(code, r => roomVerb(r, uid, verb, body, Date.now()));
+      if (!res.ok) throw new Error(res.error);
+      return res;
+    },
+    shareLink: null,
+    watchTables(cb) {
+      return db.collection('tables').orderBy('updatedAt', 'desc').limit(30).onSnapshot(snap => {
+        const all = snap.docs.map(d => d.data());
+        const fresh = t => Date.now() - (t.updatedAt || 0) < 1000 * 60 * 60 * 24 * 2;
+        cb({
+          mine: all.filter(t => t.seatIds?.includes(uid) && t.status !== 'ended' && fresh(t)),
+          open: all.filter(t => t.status === 'lobby' && !t.seatIds?.includes(uid) && t.players.length < 4 && fresh(t)),
+        });
+      }, () => cb({ mine: [], open: [] }));
+    },
+    leaveTable() {
+      if (unsub) unsub();
+      unsub = null; code = null; doc = null; clearTimeout(botTimer);
+      try { localStorage.removeItem(lastKey); } catch { /* ignore */ }
+      if (room) room.presence({ game: null }).catch(() => {});
+    },
+  };
+}
+
+return { artifactTransport };
+})();
+
+// ---- public/md.js
+__mods["md"] = (() => {
+// Tiny Markdown renderer for the rulebook (headings, tables, lists, emphasis, links).
+const esc = s => s.replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
+const slug = s => s.toLowerCase().replace(/<[^>]+>/g, '').replace(/[^a-z0-9 -]/g, '').trim().replace(/ +/g, '-');
+const inline = s => esc(s)
+  .replace(/`([^`]+)`/g, '<code>$1</code>')
+  .replace(/\*\*([^*]+)\*\*/g, '<b>$1</b>')
+  .replace(/\*([^*]+)\*/g, '<i>$1</i>')
+  .replace(/\[([^\]]+)\]\(([^)]+)\)/g, (m, t, h) => `<a href="${h.replace(/^(RULES|CARDS)\.md$/, m2 => m2 === 'CARDS.md' ? 'cards.html' : 'rules.html')}">${t}</a>`);
+function renderMarkdown(md) {
+  const lines = md.split('\n'); const out = []; let i = 0;
+  while (i < lines.length) {
+    const l = lines[i];
+    if (/^#{1,4} /.test(l)) { const n = l.match(/^#+/)[0].length; const t = inline(l.slice(n + 1)); out.push(`<h${n} id="${slug(t)}">${t}</h${n}>`); i++; continue; }
+    if (/^---\s*$/.test(l)) { out.push('<hr>'); i++; continue; }
+    if (l.startsWith('|')) {
+      const rows = []; while (i < lines.length && lines[i].startsWith('|')) rows.push(lines[i++]);
+      const cells = r => r.replace(/^\||\|$/g, '').split('|').map(c => inline(c.trim()));
+      out.push('<table><tr>' + cells(rows[0]).map(c => `<th>${c}</th>`).join('') + '</tr>' +
+        rows.slice(2).map(r => '<tr>' + cells(r).map(c => `<td>${c}</td>`).join('') + '</tr>').join('') + '</table>');
+      continue;
+    }
+    if (/^(- |\d+\. )/.test(l)) {
+      const ordered = /^\d+\. /.test(l); const items = [];
+      while (i < lines.length && /^(- |\d+\. )/.test(lines[i])) items.push(lines[i++].replace(/^(- |\d+\. )/, ''));
+      out.push(`<${ordered ? 'ol' : 'ul'}>${items.map(x => `<li>${inline(x)}</li>`).join('')}</${ordered ? 'ol' : 'ul'}>`);
+      continue;
+    }
+    if (!l.trim()) { i++; continue; }
+    const para = []; while (i < lines.length && lines[i].trim() && !/^(#|\||- |\d+\. |---)/.test(lines[i])) para.push(lines[i++]);
+    out.push(`<p>${inline(para.join(' '))}</p>`);
+  }
+  return out.join('\n');
+}
+
+return { renderMarkdown };
+})();
+
+// ---- public/cardgallery.js
+__mods["cardgallery"] = (() => {
+// Card gallery (every card in the game), used by cards.html and the in-game "Cards" overlay.
+const { RESOURCES, RESOURCE_INFO, TERRAIN_INFO, BUILDINGS, DEV_CARDS, SPECIAL_CARDS, HEADLINES } = __mods["content"];
+
+const CARD_CSS = `    .gallery h2 { max-width: 1100px; margin: 34px auto 12px; font-size: 18px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+    .grid { max-width: 1100px; margin: 0 auto; display: flex; flex-wrap: wrap; gap: 14px; }
+    .card { width: 63mm; height: 88mm; border-radius: 4mm; padding: 4mm; display: flex; flex-direction: column; position: relative; overflow: hidden;
+      background: #f8fafc; color: #0f172a; box-shadow: 0 4px 14px #0007; border: 1.5mm solid var(--c, #334155); break-inside: avoid; }
+    .card .type { font-size: 9px; letter-spacing: .16em; text-transform: uppercase; color: var(--c); font-weight: 800; }
+    .card .name { font-size: 17px; font-weight: 900; line-height: 1.1; margin: 2px 0 6px; }
+    .card .art { flex: 1; display: grid; place-items: center; font-size: 64px; border-radius: 3mm; margin-bottom: 6px;
+      background: radial-gradient(circle at 50% 40%, color-mix(in srgb, var(--c) 35%, white), color-mix(in srgb, var(--c) 75%, black)); }
+    .card .art.small { font-size: 44px; flex: 0 0 26mm; }
+    .card .text { font-size: 11.5px; font-weight: 600; }
+    .card .flavor { font-size: 10.5px; font-style: italic; color: #475569; margin-top: 4px; }
+    .card .count { position: absolute; top: 3mm; right: 3mm; font-size: 10px; font-weight: 800; background: var(--c); color: #fff; padding: 1px 6px; border-radius: 99px; }
+    .card.has-vp { padding-bottom: 8mm; }
+    .card .vp { position: absolute; bottom: 3mm; right: 3mm; font-weight: 900; font-size: 13px; color: var(--c); }
+    .cost-row { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e2e8f0; padding: 4px 0; font-size: 11.5px; }
+    .cost-row b { font-size: 12.5px; } .cost-row .ic { font-size: 15px; letter-spacing: 1px; }
+    .tile { width: 52mm; height: 60mm; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: var(--c); color: #fff;
+      display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 8mm; box-sizing: border-box; }
+    .tile .ti { font-size: 40px; } .tile b { font-size: 14px; } .tile small { font-size: 10px; opacity: .9; }
+    .note { max-width: 1100px; margin: 0 auto; color: var(--muted); font-size: 13px; }
+`;
+
+function cardsHTML() {
+    const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+    const card = ({ c, type, name, art, text = '', flavor = '', count = '', vp = '', small = false, body = '' }) => `
+      <div class="card${vp ? ' has-vp' : ''}" style="--c:${c}">${count ? `<div class="count">×${count}</div>` : ''}
+        <div class="type">${esc(type)}</div><div class="name">${esc(name)}</div>
+        ${art ? `<div class="art${small ? ' small' : ''}">${art}</div>` : ''}${body}
+        ${text ? `<div class="text">${esc(text)}</div>` : ''}${flavor ? `<div class="flavor">${esc(flavor)}</div>` : ''}
+        ${vp ? `<div class="vp">${vp}</div>` : ''}</div>`;
+    const section = (title, note, cards) => `<h2>${title}</h2>${note ? `<p class="note">${note}</p>` : ''}<div class="grid">${cards.join('')}</div>`;
+    const cost = c => Object.entries(c).map(([r, n]) => RESOURCE_INFO[r].icon.repeat(n)).join('');
+    const DEV_ART = { lobbyist: '🕴️', fiber: '🌐', venture: '💰', squeeze: '📦', vp: '🏆' };
+    const HL_ART = { fabYield: '🏭', exportCtl: '🚫', reactor: '☢️', blackouts: '🔌', rainfall: '🌧️', heatwave: '🔥', steelGlut: '🏗️', tariffs: '🧾',
+      hiringBoom: '🎓', visaFreeze: '🛂', infraBill: '🛣️', gpuGlut: '🧠', openSource: '🔓', taxBreak: '🏷️', tradeSummit: '🤝', moratorium: '⛔', vacation: '🏖️', antitrust: '⚖️', grant: '🎁' };
+    const out = [];
+    out.push(section('Resource cards', '19 of each, 95 in all.', RESOURCES.map(r => {
+      const i = RESOURCE_INFO[r]; const t = TERRAIN_INFO[i.terrain];
+      return card({ c: i.color, type: 'Resource', name: i.name, art: i.icon, count: 19, flavor: `From the ${t.name}. ${t.blurb}` });
+    })));
+    const bc = `<div style="margin:4px 0 6px">${Object.values(BUILDINGS).map(b => `<div class="cost-row"><div><b>${b.name}</b><br><small>${b.vp ? `${b.vp} VP` : b.name === 'R&D Card' ? 'draw 1 card' : '0 VP'}</small></div><div class="ic">${cost(b.cost)}</div></div>`).join('')}</div>`;
+    out.push(section('Build-cost card', 'One per player.', [card({ c: '#0e7490', type: 'Reference', name: 'Build costs', body: bc, text: 'Roll · Trade · Build. On a 7: discard if over 7 cards, move the Regulator, take 1.' })]));
+    const devCards = [];
+    for (const [k, d] of Object.entries(DEV_CARDS)) {
+      const VP_ART = ['🤖', '🏅', '🌍', '☀️', '📱'];
+      if (d.variants) d.variants.forEach((v, i) => devCards.push(card({ c: '#b45309', type: 'R&D · Breakthrough', name: v.name, art: VP_ART[i] || DEV_ART[k], text: d.text, flavor: v.flavor, vp: '+1 VP' })));
+      else devCards.push(card({ c: k === 'lobbyist' ? '#7c3aed' : '#0f766e', type: 'R&D', name: d.name, art: DEV_ART[k], text: d.text, flavor: d.flavor, count: d.count }));
+    }
+    out.push(section('R&D cards', '25 in all: 14 Lobbyists, 2 each of Fiber Rollout, Venture Round and Supply Squeeze, and 5 different Breakthroughs.', devCards));
+    out.push(section('Award cards', '', Object.entries(SPECIAL_CARDS).map(([k, s]) => card({ c: k === 'longestRoad' ? '#047857' : '#6d28d9', type: 'Award', name: s.name, art: k === 'longestRoad' ? '🌐' : '🏛️', text: s.text, vp: `${s.vp} VP` }))));
+    out.push(section('Headline cards', 'Reveal one at the start of each round. It lasts until the next round begins.', HEADLINES.map(h => card({ c: h.effect.produce ? (Object.values(h.effect.produce)[0] ? '#15803d' : '#b91c1c') : '#1d4ed8', type: 'Headline', name: h.name, art: HL_ART[h.id] || '📰', small: true, text: h.text, flavor: h.flavor }))));
+    out.push(section('Region tiles', '19 tiles: print on card stock.', Object.values(TERRAIN_INFO).map(t => `<div class="tile" style="--c:${t.color}"><div class="ti">${t.icon}</div><b>${t.name}</b><small>×${t.count} · ${t.resource ? RESOURCE_INFO[t.resource].name : 'no resource'}</small></div>`)));
+    return out.join('');
+  }
+
+return { CARD_CSS, cardsHTML };
+})();
+
+// ---- public/app.js
+__mods["app"] = (() => {
+const { TOPO, PIPS, legalSettlementVertices, legalRoadEdges, legalCityVertices, tradeRatio, canAfford, costOf, isBanned, playableDevCards, protectedHex, handSize } = __mods["engine"];
+const { RESOURCES, RESOURCE_INFO, TERRAIN_INFO, BUILDINGS, DEV_CARDS, SPECIAL_CARDS } = __mods["content"];
+const { serverTransport } = __mods["transport-server"];
+const { artifactTransport } = __mods["transport-artifact"];
+const { renderMarkdown } = __mods["md"];
+const { cardsHTML, CARD_CSS } = __mods["cardgallery"];
+
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const ICON = r => RESOURCE_INFO[r].icon;
+const costIcons = cost => Object.entries(cost).map(([r, n]) => ICON(r).repeat(n)).join('');
+const DIE = ['', '⚀', '⚁', '⚂', '⚃', '⚄', '⚅'];
+// Only touch the DOM when a panel's markup changed, so clicks are never lost to a re-render.
+const htmlCache = new Map();
+function setHTML(id, html) {
+  if (htmlCache.get(id) === html) return false;
+  htmlCache.set(id, html);
+  $(id).innerHTML = html;
+  return true;
+}
+
+const T = globalThis.HYPERSCALE_HOSTED ? artifactTransport() : serverTransport();
+let lobby = null, game = null;
+const ui = {
+  mode: null, tradeTab: 'market', bankGive: null, bankGet: null,
+  offer: { give: {}, get: {} }, discard: {}, modal: null, pick: [], logTab: 'log',
+  seenChat: 0, dismissedEnd: -1, lastLogN: -1,
+};
+
+// ------------------------------------------------------------ networking
+const call = (verb, body = {}) => T.call(verb, body).catch(e => toast(e.message));
+const act = action => call('action', { action });
+function toast(msg, info = false) {
+  const t = $('toast');
+  t.textContent = msg; t.className = `toast${info ? ' info' : ''}`;
+  clearTimeout(toast.timer);
+  toast.timer = setTimeout(() => t.classList.add('hidden'), 3500);
+}
+function savedName() { try { return localStorage.getItem('hyperscale:name') || ''; } catch { return ''; } }
+function saveName(n) { try { localStorage.setItem('hyperscale:name', n); } catch { /* ignore */ } }
+function onUpdate(data) { lobby = data.lobby; game = data.game; render(); }
+
+// ------------------------------------------------------------ routing
+function show(id) {
+  for (const s of ['home', 'lobby', 'game']) $(s).classList.toggle('hidden', s !== id);
+}
+
+let tablesUnsub = null;
+function showHome() {
+  lobby = null; game = null;
+  show('home');
+  $('home-tables').classList.toggle('hidden', !T.watchTables);
+  if (T.watchTables && !tablesUnsub) tablesUnsub = T.watchTables(renderTables);
+}
+function renderTables({ mine, open }) {
+  const row = (t, label) => `<li><span class="grow"><b>${esc(t.host)}'s table</b> <span class="code small">${esc(t.code)}</span><br>
+    <span class="muted">${t.players.map(esc).join(', ')} · ${t.mode === 'classic' ? 'Classic' : 'Quick'} · ${t.status === 'playing' ? 'in progress' : 'waiting to start'}</span></span>
+    <button class="small primary" data-table="${esc(t.code)}">${label}</button></li>`;
+  setHTML('tables-mine', mine.length ? mine.map(t => row(t, 'Return')).join('') : '<li class="muted">None yet.</li>');
+  setHTML('tables-open', open.length ? open.map(t => row(t, 'Join')).join('') : '<li class="muted">No open tables right now. Create one and invite your friends.</li>');
+}
+document.addEventListener('click', e => {
+  const b = e.target.closest('[data-table]');
+  if (!b) return;
+  $('home-code').value = b.dataset.table;
+  $('btn-join').click();
+});
+
+async function boot() {
+  $('home-name').value = savedName();
+  document.body.classList.toggle('hosted', !!T.hosted);
+  if (T.hosted) for (const l of document.querySelectorAll('a[href^="/"]')) l.setAttribute('href', l.getAttribute('href').slice(1));
+  let r;
+  try { r = await T.init(onUpdate); } catch (e) { r = { screen: 'error', error: e.message }; }
+  if (r.screen === 'room') return;
+  showHome();
+  if (r.code) { $('home-code').value = r.code; $('home-name').focus(); }
+  if (r.screen === 'error') {
+    $('home-error').textContent = r.error;
+    for (const id of ['btn-create', 'btn-join']) $(id).disabled = true;
+  }
+}
+
+$('btn-create').onclick = async () => {
+  const name = $('home-name').value.trim();
+  if (!name) { $('home-error').textContent = 'Enter your name first.'; return; }
+  saveName(name);
+  $('btn-create').disabled = true;
+  try { await T.create(name); } catch (e) { $('home-error').textContent = e.message; }
+  $('btn-create').disabled = false;
+};
+$('btn-join').onclick = async () => {
+  const name = $('home-name').value.trim();
+  const c = $('home-code').value.trim().toUpperCase();
+  if (!name) { $('home-error').textContent = 'Enter your name first.'; $('home-name').focus(); return; }
+  if (c.length !== 5) { $('home-error').textContent = 'Room codes are 5 characters.'; return; }
+  saveName(name);
+  try { await T.join(c, name); }
+  catch (e) {
+    if (e.spectating) { toast('That game already started: you are watching.', true); return; }
+    $('home-error').textContent = e.message;
+  }
+};
+$('home-code').addEventListener('keydown', e => { if (e.key === 'Enter') $('btn-join').click(); });
+window.addEventListener('popstate', () => { if (!T.hosted) location.reload(); });
+
+// ------------------------------------------------------------ lobby
+$('btn-copy').onclick = async () => {
+  const link = $('lobby-link').value;
+  try { await navigator.clipboard.writeText(link); toast('Copied', true); }
+  catch { $('lobby-link').select(); }
+};
+$('btn-addbot').onclick = () => call('addBot', { profile: $('bot-profile').value });
+$('btn-start').onclick = () => call('start');
+$('opt-mode').onchange = () => call('options', { options: { mode: $('opt-mode').value } });
+$('opt-headlines').onchange = () => call('options', { options: { headlines: $('opt-headlines').checked } });
+$('opt-friendly').onchange = () => call('options', { options: { friendlyRegulator: $('opt-friendly').checked } });
+$('lobby-seats').onclick = e => {
+  const b = e.target.closest('[data-remove]');
+  if (b) call('removeSeat', { seat: +b.dataset.remove });
+};
+for (const id of ['btn-leave', 'btn-home']) $(id).onclick = async () => {
+  if (lobby && lobby.you >= 0 && !lobby.isHost && !lobby.started) await T.call('leave').catch(() => {});
+  T.leaveTable();
+  showHome();
+};
+
+function renderLobby() {
+  show('lobby');
+  $('lobby-code').textContent = lobby.code;
+  const link = T.shareLink ? T.shareLink(lobby.code) : `Join code ${lobby.code}`;
+  $('lobby-link').value = link;
+  $('share-hint').textContent = T.shareLink
+    ? 'Send this link to friends. Up to 4 players; fill empty seats with bots.'
+    : 'Friends open this same page, enter the code (or pick your table from the list), and join. Up to 4 players; fill empty seats with bots.';
+  setHTML('lobby-seats', lobby.seats.map(s => `
+    <li><span class="dot" style="background:${s.color}"></span>
+      <span class="grow">${esc(s.name)} ${s.seat === lobby.you ? '<span class="badge on">you</span>' : ''} ${s.seat === lobby.host ? '<span class="badge">host</span>' : ''}
+      ${s.bot ? `<span class="badge">${esc(s.bot)}</span>` : (s.connected ? '' : '<span class="badge">offline</span>')}</span>
+      ${lobby.isHost && s.seat !== lobby.host ? `<button class="small danger" data-remove="${s.seat}">Remove</button>` : ''}
+    </li>`).join('') + Array.from({ length: 4 - lobby.seats.length }, () => `<li class="muted"><span class="dot" style="background:transparent"></span>Empty seat</li>`).join(''));
+  $('lobby-host').classList.toggle('hidden', !lobby.isHost);
+  $('lobby-wait').classList.toggle('hidden', lobby.isHost);
+  $('opt-mode').value = lobby.options.mode;
+  $('opt-mode-note').textContent = `First to ${lobby.options.vpToWin} points.`;
+  $('opt-headlines').checked = lobby.options.headlines;
+  $('opt-friendly').checked = lobby.options.friendlyRegulator;
+  $('btn-addbot').disabled = lobby.seats.length >= 4;
+  $('btn-start').disabled = lobby.seats.length < 2;
+}
+
+// ------------------------------------------------------------ helpers
+const me = () => (game && lobby.you >= 0 ? game.players[lobby.you] : null);
+const isMyTurn = () => game && game.phase !== 'ended' && game.current === lobby.you;
+const P = id => game.players[id];
+const pn = id => `<b style="color:${P(id).color}">${esc(P(id).name)}</b>`;
+function stageLabel() {
+  const g = game, you = lobby.you;
+  if (g.phase === 'ended') return `🏆 ${pn(g.winner)} wins the race to hyperscale!`;
+  if (g.phase === 'setup') {
+    const what = g.setup.step === 'settlement' ? 'place a Data Center' : 'place a Fiber Line next to it';
+    return isMyTurn() ? `<span class="you">Setup: ${what}</span>` : `Setup: ${pn(g.current)} is placing…`;
+  }
+  const t = g.turn;
+  switch (t.stage) {
+    case 'preroll': return isMyTurn() ? `<span class="you">Your turn: roll the dice</span>` : `${pn(g.current)}'s turn`;
+    case 'discard': return t.discards[you] ? `<span class="you">Audit! Discard ${t.discards[you]} resources</span>` : `Waiting for ${Object.keys(t.discards).map(i => pn(+i)).join(', ')} to discard…`;
+    case 'regulator': return isMyTurn() ? `<span class="you">Move the Regulator: click a region</span>` : `${pn(g.current)} is moving the Regulator…`;
+    case 'steal': return isMyTurn() ? `<span class="you">Choose who to take a resource from</span>` : `${pn(g.current)} is choosing a target…`;
+    case 'roadBuilding': return isMyTurn() ? `<span class="you">Place ${t.freeRoads} free Fiber Line${t.freeRoads > 1 ? 's' : ''}</span>` : `${pn(g.current)} is rolling out fiber…`;
+    default: return isMyTurn() ? `<span class="you">Build, trade, or end your turn</span>` : `${pn(g.current)} is building and trading…`;
+  }
+}
+
+// ------------------------------------------------------------ board
+const terrainGrad = Object.entries(TERRAIN_INFO).map(([t, i]) =>
+  `<radialGradient id="g-${t}" cx="50%" cy="40%" r="70%"><stop offset="0%" stop-color="${i.color}" stop-opacity="1"/><stop offset="100%" stop-color="${shade(i.color, -28)}"/></radialGradient>`).join('');
+function shade(hex, pct) {
+  const n = parseInt(hex.slice(1), 16);
+  const f = c => Math.max(0, Math.min(255, Math.round(c + c * pct / 100)));
+  return `#${[f(n >> 16), f((n >> 8) & 255), f(n & 255)].map(x => x.toString(16).padStart(2, '0')).join('')}`;
+}
+
+function boardInteractions() {
+  const g = game, you = lobby.you;
+  const out = { vertices: [], edges: [], cities: [], hexes: [] };
+  if (!isMyTurn()) return out;
+  if (g.phase === 'setup') {
+    if (g.setup.step === 'settlement') out.vertices = legalSettlementVertices(g, you, true);
+    else out.edges = legalRoadEdges(g, you, g.setup.lastVertex);
+    return out;
+  }
+  const st = g.turn.stage;
+  if (st === 'regulator') {
+    const anyOpen = g.hexes.some(h => h.id !== g.regulator && !protectedHex(g, you, h.id));
+    out.hexes = g.hexes.filter(h => h.id !== g.regulator && (!anyOpen || !protectedHex(g, you, h.id))).map(h => h.id);
+  } else if (st === 'roadBuilding') out.edges = legalRoadEdges(g, you);
+  else if (st === 'main') {
+    if (ui.mode === 'road') out.edges = legalRoadEdges(g, you);
+    if (ui.mode === 'settlement') out.vertices = legalSettlementVertices(g, you);
+    if (ui.mode === 'city') out.cities = legalCityVertices(g, you);
+  }
+  return out;
+}
+
+function renderBoard() {
+  const g = game;
+  const V = TOPO.vertices;
+  const hot = g.lastRoll && g.lastRoll.total !== 7 ? g.lastRoll.total : null;
+  const parts = [];
+  parts.push(`<defs>${terrainGrad}
+    <radialGradient id="seaGrad" cx="50%" cy="50%" r="60%"><stop offset="0%" stop-color="#155e75"/><stop offset="100%" stop-color="#0b2540"/></radialGradient>
+    <filter id="glow" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation=".08" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+    <pattern id="grid" width=".5" height=".5" patternUnits="userSpaceOnUse"><path d="M .5 0 L 0 0 0 .5" fill="none" stroke="#ffffff" stroke-opacity=".05" stroke-width=".02"/></pattern></defs>`);
+  // sea (flat-top hexagon around the island)
+  const R = 5.95;
+  const sea = Array.from({ length: 6 }, (_, i) => { const a = Math.PI / 3 * i; return `${R * Math.cos(a)},${R * Math.sin(a)}`; }).join(' ');
+  parts.push(`<polygon class="sea" points="${sea}" stroke="#0e7490" stroke-width=".06" stroke-linejoin="round"/><polygon points="${sea}" fill="url(#grid)"/>`);
+
+  // ports
+  for (const p of g.ports) {
+    const a = V[p.vertices[0]], b = V[p.vertices[1]];
+    const mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2;
+    const len = Math.hypot(mx, my);
+    const px = mx / len * (len + 0.62), py = my / len * (len + 0.62);
+    parts.push(`<line class="port-line" x1="${a.x}" y1="${a.y}" x2="${px}" y2="${py}"/><line class="port-line" x1="${b.x}" y1="${b.y}" x2="${px}" y2="${py}"/>`);
+    const title = p.type === 'any' ? 'Spot Market: trade 3 identical resources for 1' : `${RESOURCE_INFO[p.type].name} Supplier: trade 2 ${RESOURCE_INFO[p.type].name} for 1`;
+    parts.push(`<g><title>${title}</title><circle class="port" cx="${px}" cy="${py}" r=".34"/>`);
+    if (p.type === 'any') parts.push(`<text class="port-text" x="${px}" y="${py}">3:1</text>`);
+    else parts.push(`<text class="port-icon" x="${px}" y="${py - 0.08}">${ICON(p.type)}</text><text class="port-text" x="${px}" y="${py + 0.15}" style="font-size:.13px">2:1</text>`);
+    parts.push(`</g>`);
+  }
+
+  // hexes
+  for (const h of g.hexes) {
+    const th = TOPO.hexes[h.id];
+    const pts = th.vertices.map(v => `${V[v].x},${V[v].y}`).join(' ');
+    const info = TERRAIN_INFO[h.terrain];
+    const isHot = hot && h.number === hot;
+    parts.push(`<g><title>${info.name}${h.number ? ` (${h.number})` : ''}: ${info.resource ? `produces ${RESOURCE_INFO[info.resource].name}` : 'produces nothing'}</title>
+      <polygon class="hex${isHot ? ' hot' : ''}" points="${pts}" fill="url(#g-${h.terrain})" ${isHot ? 'stroke="#fff" stroke-width=".08"' : ''}/>
+      <text class="hex-icon" x="${th.x}" y="${th.y - 0.48}">${info.icon}</text>`);
+    if (h.number) {
+      const red = h.number === 6 || h.number === 8;
+      parts.push(`<circle class="token" cx="${th.x}" cy="${th.y + 0.12}" r=".31"/>
+        <text class="token-num${red ? ' red' : ''}" x="${th.x}" y="${th.y + 0.07}">${h.number}</text>`);
+      const n = PIPS[h.number];
+      for (let i = 0; i < n; i++) parts.push(`<circle class="pip${red ? ' red' : ''}" cx="${th.x + (i - (n - 1) / 2) * 0.075}" cy="${th.y + 0.28}" r=".022"/>`);
+    }
+    parts.push(`</g>`);
+  }
+
+  // regulator
+  {
+    const th = TOPO.hexes[g.regulator];
+    const x = th.x + (g.hexes[g.regulator].number ? 0.52 : 0), y = th.y + (g.hexes[g.regulator].number ? 0.12 : 0.15);
+    parts.push(`<g class="regulator"><title>The Regulator: this region produces nothing</title>
+      <circle cx="${x}" cy="${y}" r=".26" fill="#111827" stroke="#f8fafc" stroke-width=".04"/>
+      <text class="hex-icon" x="${x}" y="${y + 0.01}" style="font-size:.3px">⚖️</text></g>`);
+  }
+
+  // roads
+  for (const [e, owner] of Object.entries(g.roads)) {
+    const ed = TOPO.edges[e];
+    const [x1, y1, x2, y2] = shorten(V[ed.a], V[ed.b], 0.14);
+    parts.push(`<line class="road-outline" x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}"/><line class="road" stroke="${P(owner).color}" x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}"/>`);
+  }
+  // buildings
+  for (const [v, b] of Object.entries(g.buildings)) {
+    const { x, y } = V[v];
+    const c = P(b.owner).color;
+    if (b.type === 'settlement') {
+      parts.push(`<g><title>${esc(P(b.owner).name)}'s Data Center</title><rect class="bldg" x="${x - 0.17}" y="${y - 0.17}" width=".34" height=".34" rx=".05" fill="${c}"/>
+        <line class="bldg-line" x1="${x - 0.11}" x2="${x + 0.11}" y1="${y - 0.06}" y2="${y - 0.06}"/><line class="bldg-line" x1="${x - 0.11}" x2="${x + 0.11}" y1="${y + 0.04}" y2="${y + 0.04}"/>
+        <circle cx="${x + 0.09}" cy="${y + 0.11}" r=".025" fill="#22c55e"/></g>`);
+    } else {
+      parts.push(`<g><title>${esc(P(b.owner).name)}'s Hyperscale Campus</title>
+        <rect class="bldg" x="${x - 0.27}" y="${y - 0.2}" width=".54" height=".4" rx=".05" fill="${c}"/>
+        <rect class="bldg" x="${x - 0.16}" y="${y - 0.34}" width=".14" height=".16" fill="${c}"/><rect class="bldg" x="${x + 0.03}" y="${y - 0.34}" width=".14" height=".16" fill="${c}"/>
+        <line class="bldg-line" x1="${x - 0.2}" x2="${x + 0.2}" y1="${y - 0.08}" y2="${y - 0.08}"/><line class="bldg-line" x1="${x - 0.2}" x2="${x + 0.2}" y1="${y + 0.02}" y2="${y + 0.02}"/><line class="bldg-line" x1="${x - 0.2}" x2="${x + 0.2}" y1="${y + 0.12}" y2="${y + 0.12}"/>
+        <circle cx="${x + 0.19}" cy="${y + 0.14}" r=".03" fill="#22c55e"/></g>`);
+    }
+  }
+
+  // interaction overlays
+  const ix = boardInteractions();
+  for (const h of ix.hexes) {
+    const th = TOPO.hexes[h];
+    parts.push(`<polygon class="hex-pick" data-hex="${h}" points="${th.vertices.map(v => `${V[v].x},${V[v].y}`).join(' ')}"/>`);
+  }
+  // Visible markers plus larger invisible hit areas for fingers.
+  for (const e of ix.edges) {
+    const ed = TOPO.edges[e];
+    const [x1, y1, x2, y2] = shorten(V[ed.a], V[ed.b], 0.2);
+    parts.push(`<line class="edge-spot" data-edge="${e}" x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}"/>`);
+    parts.push(`<line class="hit" data-edge="${e}" x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="transparent" stroke-width=".38"/>`);
+  }
+  for (const v of ix.vertices) {
+    parts.push(`<circle class="spot" data-vertex="${v}" cx="${V[v].x}" cy="${V[v].y}" r=".17"/>`);
+    parts.push(`<circle class="hit" data-vertex="${v}" cx="${V[v].x}" cy="${V[v].y}" r=".3" fill="transparent"/>`);
+  }
+  for (const v of ix.cities) parts.push(`<circle class="city-spot" data-city="${v}" cx="${V[v].x}" cy="${V[v].y}" r=".34"/>`);
+  setHTML('board', parts.join(''));
+}
+function shorten(a, b, d) {
+  const dx = b.x - a.x, dy = b.y - a.y, L = Math.hypot(dx, dy);
+  return [a.x + dx / L * d, a.y + dy / L * d, b.x - dx / L * d, b.y - dy / L * d];
+}
+
+$('board').addEventListener('click', e => {
+  const t = e.target;
+  if (!game || !isMyTurn()) return;
+  if (t.dataset.vertex !== undefined) { act({ type: 'buildSettlement', vertex: +t.dataset.vertex }); ui.mode = null; }
+  else if (t.dataset.edge !== undefined) { act({ type: 'buildRoad', edge: +t.dataset.edge }); if (game.phase === 'main' && game.turn.stage === 'main') keepRoadMode(); }
+  else if (t.dataset.city !== undefined) { act({ type: 'buildCity', vertex: +t.dataset.city }); ui.mode = null; }
+  else if (t.dataset.hex !== undefined) act({ type: 'moveRegulator', hex: +t.dataset.hex });
+});
+function keepRoadMode() {
+  // stay in road mode only if the player can afford another one
+  const m = me();
+  const after = { ...m.resources };
+  for (const [r, n] of Object.entries(costOf(game, 'road'))) after[r] -= n;
+  if (!canAfford(after, costOf(game, 'road'))) ui.mode = null;
+}
+
+// ------------------------------------------------------------ side panels
+function renderDice() {
+  const r = game.lastRoll;
+  setHTML('dice', r ? `<div class="die">${DIE[r.dice[0]]}</div><div class="die">${DIE[r.dice[1]]}</div><div class="total">${r.total}</div>` : '');
+  setHTML('bank', `Bank: ${RESOURCES.map(x => `${ICON(x)}${game.bank[x]}`).join(' ')} · R&D deck ${game.devDeckCount}`);
+}
+
+function renderHeadline() {
+  const h = game.headline;
+  setHTML('headline', h ? `<div class="headline-card" title="Headlines change every round">
+    <div class="kicker">📰 Round ${h.round} headline</div><div class="title">${esc(h.name)}</div><div class="text">${esc(h.text)}</div></div>` : '');
+}
+
+function renderPlayers() {
+  const g = game;
+  const lr = g.longestRoad.lengths || [];
+  setHTML('players', g.players.map(p => {
+    const seat = lobby.seats[p.id];
+    const online = !seat || seat.connected;
+    const vp = p.vp !== undefined ? p.vp : p.publicVP;
+    const hiddenNote = p.vp !== undefined && p.vp !== p.publicVP ? `<small>${p.publicVP} public</small>` : '<small>VP</small>';
+    return `<div class="prow ${g.current === p.id && g.phase !== 'ended' ? 'current' : ''} ${online ? '' : 'offline'}">
+      <div class="bar" style="background:${p.color}"></div>
+      <div><div class="name">${esc(p.name)}${p.id === lobby.you ? ' <span class="badge on">you</span>' : ''}${online ? '' : ' <span class="badge">offline</span>'}
+        ${g.longestRoad.holder === p.id ? '<span class="award" title="Largest Network">🌐 Network</span>' : ''}
+        ${g.largestArmy.holder === p.id ? '<span class="award inf" title="Most Influence">🏛️ Influence</span>' : ''}</div>
+        <div class="meta"><span title="Resource cards">🃏 ${p.resourceCount}</span><span title="R&D cards in hand">🔬 ${p.devCount}</span>
+        <span title="Lobbyists played">🕴️ ${p.playedDev.lobbyist}</span><span title="Longest fiber chain">🌐 ${lr[p.id] || 0}</span>
+        ${lobby.isHost && !online && !p.bot && g.phase !== 'ended' ? `<button class="small" data-botify="${p.id}" title="Let a bot play this seat so the game can continue">🤖 Bot takes over</button>` : ''}</div></div>
+      <div class="vp">${vp}${hiddenNote}</div></div>`;
+  }).join(''));
+}
+
+function renderMe() {
+  const m = me();
+  if (!m) { setHTML('me', '<div class="muted">You are watching this game.</div>'); return; }
+  const g = game, t = g.turn;
+  const myTurn = isMyTurn();
+  const main = myTurn && g.phase === 'main' && t.stage === 'main';
+  const hand = RESOURCES.map(r => `<div class="rcard ${m.resources[r] ? '' : 'zero'}" style="background:${RESOURCE_INFO[r].color}">
+    <div class="ico">${ICON(r)}</div><div class="n">${m.resources[r]}</div><div class="lbl">${RESOURCE_INFO[r].name}</div></div>`).join('');
+  const canRoll = myTurn && g.phase === 'main' && t.stage === 'preroll';
+  const builds = [
+    ['road', 'road', m.pieces.road, legalRoadEdges(g, m.id).length > 0],
+    ['settlement', 'settlement', m.pieces.settlement, legalSettlementVertices(g, m.id).length > 0 && !isBanned(g, 'settlement')],
+    ['city', 'city', m.pieces.city, legalCityVertices(g, m.id).length > 0],
+    ['dev', 'dev', g.devDeckCount, g.devDeckCount > 0],
+  ].map(([kind, key, left, legal]) => {
+    const cost = costOf(g, key);
+    const ok = main && left > 0 && legal && canAfford(m.resources, cost);
+    const discounted = cost !== BUILDINGS[key].cost;
+    return `<button class="build ${ui.mode === kind ? 'active' : ''}" data-build="${kind}" ${ok ? '' : 'disabled'} title="${esc(BUILDINGS[key].blurb)}">
+      <span class="bname">${BUILDINGS[key].name}${discounted ? ' 🏷️' : ''}</span><span class="cost">${costIcons(cost)}</span>
+      <span class="left">${kind === 'dev' ? `${left} in deck` : `${left} left`}</span></button>`;
+  }).join('');
+  const playable = playableDevCards(g, m.id);
+  const groups = {};
+  for (const c of m.devCards) {
+    const k = c.type === 'vp' ? `vp:${c.variant}` : c.type;
+    (groups[k] ||= { ...c, n: 0, fresh: 0 }).n++;
+    if (c.boughtTurn === g.turnNumber) groups[k].fresh++;
+  }
+  const devs = Object.values(groups).map(c => {
+    const info = DEV_CARDS[c.type];
+    const name = c.type === 'vp' ? c.variant : info.name;
+    const can = c.type !== 'vp' && playable.includes(c.type) && c.n > c.fresh;
+    return `<div class="dev ${c.fresh === c.n && c.type !== 'vp' ? 'new' : ''}"><div class="grow"><div class="dname">${c.type === 'vp' ? '🏆' : c.type === 'lobbyist' ? '🕴️' : '🔬'} ${esc(name)}${c.n > 1 ? ` ×${c.n}` : ''}</div>
+      <div class="dtext">${esc(c.type === 'vp' ? '+1 VP, hidden from other players.' : info.text)}${c.fresh && c.type !== 'vp' ? ' <i>(new: playable next turn)</i>' : ''}</div></div>
+      ${c.type !== 'vp' ? `<button class="small" data-play="${c.type}" ${can ? '' : 'disabled'}>Play</button>` : ''}</div>`;
+  }).join('');
+  setHTML('me', `<h3>Your operation</h3><div class="hand">${hand}</div>
+    <div class="actions"><button class="primary" id="btn-roll" ${canRoll ? '' : 'disabled'}>🎲 Roll</button>
+      <button id="btn-end" ${main ? '' : 'disabled'}>End turn ⏭</button></div>
+    <div class="builds">${builds}</div>
+    ${ui.mode ? `<div class="muted" style="margin-top:6px">Click a glowing spot on the board, or <a href="#" id="cancel-mode">cancel</a>.</div>` : ''}
+    ${devs ? `<div class="devs">${devs}</div>` : ''}`);
+}
+
+// Two-tap confirm (artifact frames block confirm() dialogs).
+$('players').addEventListener('click', e => {
+  const b = e.target.closest('[data-botify]');
+  if (!b) return;
+  if (b.dataset.armed) return call('botify', { seat: +b.dataset.botify });
+  b.dataset.armed = '1';
+  b.textContent = `Tap again: a bot plays for ${P(+b.dataset.botify).name}`;
+  setTimeout(() => { delete b.dataset.armed; htmlCache.delete('players'); render(); }, 4000);
+});
+
+// Rules and card gallery as in-page overlays (used by the hosted version).
+async function openDoc(kind) {
+  let html;
+  if (kind === 'rules') {
+    try { html = `<div class="doc">${renderMarkdown(await (await fetch('RULES.md')).text())}</div>`; }
+    catch { html = '<p>Could not load the rules.</p>'; }
+  } else {
+    if (!document.getElementById('card-css')) document.head.insertAdjacentHTML('beforeend', `<style id="card-css">${CARD_CSS}</style>`);
+    html = `<div class="gallery">${cardsHTML()}</div>`;
+  }
+  $('doc-body').innerHTML = html;
+  $('doc').classList.remove('hidden');
+  $('doc-body').scrollTop = 0;
+}
+$('doc-close').onclick = () => $('doc').classList.add('hidden');
+document.addEventListener('click', e => {
+  const a = e.target.closest('a[href$="rules.html"], a[href$="cards.html"]');
+  if (!a || !T.hosted) return;
+  e.preventDefault();
+  openDoc(a.getAttribute('href').includes('rules') ? 'rules' : 'cards');
+});
+$('me').addEventListener('click', e => {
+  const b = e.target.closest('button, a');
+  if (!b) return;
+  if (b.id === 'btn-roll') return act({ type: 'roll' });
+  if (b.id === 'btn-end') { ui.mode = null; return act({ type: 'endTurn' }); }
+  if (b.id === 'cancel-mode') { e.preventDefault(); ui.mode = null; return render(); }
+  if (b.dataset.build) {
+    const k = b.dataset.build;
+    if (k === 'dev') return act({ type: 'buyDev' });
+    ui.mode = ui.mode === k ? null : k;
+    return render();
+  }
+  if (b.dataset.play) {
+    const c = b.dataset.play;
+    if (c === 'venture' || c === 'squeeze') { ui.modal = c; ui.pick = []; return render(); }
+    return act({ type: 'playDev', card: c });
+  }
+});
+
+function stepper(side, r) {
+  const n = ui.offer[side][r] || 0;
+  return `<div class="stepper"><button class="small" data-step="${side}:${r}:-1">−</button><span>${n}</span><button class="small" data-step="${side}:${r}:1">+</button></div>`;
+}
+
+function renderTrade() {
+  const m = me(), g = game;
+  if (!m || g.phase !== 'main') { setHTML('trade', ''); $('trade').classList.add('hidden'); return; }
+  $('trade').classList.remove('hidden');
+  const myMain = isMyTurn() && g.turn.stage === 'main';
+  const rates = RESOURCES.map(r => `${ICON(r)}${tradeRatio(g, m.id, r)}:1`).join(' ');
+  let body = '';
+  if (!myMain) {
+    body = `<div class="muted">Trading opens on your turn after you roll. Your market rates: ${rates}</div>`;
+  } else if (g.trade) {
+    const tr = g.trade;
+    const rows = g.players.filter(p => p.id !== m.id).map(p => {
+      const r = tr.responses[p.id];
+      return `<div>${pn(p.id)}: ${r === 'accept' ? `<button class="small primary" data-accept="${p.id}">Trade with them</button>` : r === 'decline' ? 'declined' : '<i>thinking…</i>'}</div>`;
+    }).join('');
+    body = `<div class="offer">You offer <b>${bundle(tr.give)}</b> for <b>${bundle(tr.get)}</b>${rows}<div class="row"><button class="small" data-cancel-trade>Cancel offer</button></div></div>`;
+  } else {
+    const tabs = `<div class="tabs"><button class="tab ${ui.tradeTab === 'market' ? 'active' : ''}" data-ttab="market">Market</button><button class="tab ${ui.tradeTab === 'players' ? 'active' : ''}" data-ttab="players">Players</button></div>`;
+    if (ui.tradeTab === 'market') {
+      const gives = RESOURCES.filter(r => m.resources[r] >= tradeRatio(g, m.id, r));
+      if (!gives.includes(ui.bankGive)) ui.bankGive = gives[0] || null;
+      if (!ui.bankGet || ui.bankGet === ui.bankGive) ui.bankGet = RESOURCES.find(r => r !== ui.bankGive);
+      body = tabs + `<div class="muted" style="margin-bottom:6px">Your rates: ${rates}</div>` + (gives.length ? `<div class="bank-row">Give
+        <select id="bank-give">${gives.map(r => `<option value="${r}" ${r === ui.bankGive ? 'selected' : ''}>${tradeRatio(g, m.id, r)} ${ICON(r)} ${RESOURCE_INFO[r].name}</option>`).join('')}</select> get
+        <select id="bank-get">${RESOURCES.filter(r => r !== ui.bankGive).map(r => `<option value="${r}" ${r === ui.bankGet ? 'selected' : ''}>1 ${ICON(r)} ${RESOURCE_INFO[r].name}</option>`).join('')}</select>
+        <button class="small primary" id="btn-bank">Trade</button></div>` : `<div class="muted">You don't have enough of any resource to trade with the market.</div>`);
+    } else {
+      const head = `<div></div>${RESOURCES.map(r => `<div class="rh" title="${RESOURCE_INFO[r].name}">${ICON(r)}</div>`).join('')}`;
+      body = tabs + `<div class="trade-grid">${head}<div>Give</div>${RESOURCES.map(r => stepper('give', r)).join('')}<div>Get</div>${RESOURCES.map(r => stepper('get', r)).join('')}</div>
+        <div class="row" style="display:flex;gap:6px;margin-top:8px"><button class="small primary" id="btn-offer">Offer to everyone</button><button class="small" id="btn-clear-offer">Clear</button></div>`;
+    }
+  }
+  setHTML('trade', `<h3>Trade</h3>${body}`);
+}
+const bundle = b => RESOURCES.filter(r => b[r]).map(r => `${b[r]}${ICON(r)}`).join(' ');
+
+$('trade').addEventListener('click', e => {
+  const b = e.target.closest('button');
+  if (!b) return;
+  if (b.dataset.ttab) { ui.tradeTab = b.dataset.ttab; return render(); }
+  if (b.id === 'btn-bank') return act({ type: 'bankTrade', give: $('bank-give').value, get: $('bank-get').value });
+  if (b.dataset.step) {
+    const [side, r, d] = b.dataset.step.split(':');
+    const other = side === 'give' ? 'get' : 'give';
+    const n = Math.max(0, (ui.offer[side][r] || 0) + +d);
+    if (side === 'give' && n > me().resources[r]) return;
+    ui.offer[side][r] = n;
+    if (n) ui.offer[other][r] = 0;
+    return render();
+  }
+  if (b.id === 'btn-clear-offer') { ui.offer = { give: {}, get: {} }; return render(); }
+  if (b.id === 'btn-offer') return act({ type: 'offerTrade', give: ui.offer.give, get: ui.offer.get });
+  if (b.dataset.accept !== undefined) { ui.offer = { give: {}, get: {} }; return act({ type: 'acceptTrade', with: +b.dataset.accept }); }
+  if (b.dataset.cancelTrade !== undefined) return act({ type: 'cancelTrade' });
+});
+$('trade').addEventListener('change', e => {
+  if (e.target.id === 'bank-give') { ui.bankGive = e.target.value; render(); }
+  if (e.target.id === 'bank-get') ui.bankGet = e.target.value;
+});
+
+function renderOfferBanner() {
+  const g = game, m = me(), tr = g.trade;
+  if (!tr || !m || tr.from === m.id || g.phase !== 'main') { setHTML('offer-banner', ''); return; }
+  const resp = tr.responses[m.id];
+  const can = canAfford(m.resources, tr.get);
+  setHTML('offer-banner', `<div class="offer">${pn(tr.from)} offers <b>${bundle(tr.give)}</b> for your <b>${bundle(tr.get)}</b>
+    <div class="row">${resp ? `<span class="muted">You ${resp === 'accept' ? 'accepted. Waiting for them to confirm…' : 'declined.'}</span>` :
+      `<button class="small primary" data-respond="1" ${can ? '' : 'disabled title="You do not have those resources"'}>Accept</button><button class="small" data-respond="0">Decline</button>`}</div></div>`);
+}
+$('offer-banner').addEventListener('click', e => {
+  const b = e.target.closest('[data-respond]');
+  if (b) act({ type: 'respondTrade', tradeId: game.trade.id, accept: b.dataset.respond === '1' });
+});
+
+function renderLog() {
+  const box = $('log');
+  const atBottom = box.scrollHeight - box.scrollTop - box.clientHeight < 30;
+  box.innerHTML = game.log.map(l => `<div class="entry ${l.msg.startsWith('📰') ? 'headline' : ''}" style="border-color:${l.pid !== null && l.pid !== undefined ? P(l.pid).color : 'transparent'}">${esc(l.msg)}</div>`).join('');
+  if (atBottom || ui.lastLogN === -1) box.scrollTop = box.scrollHeight;
+  ui.lastLogN = game.log.length;
+}
+function renderChat() {
+  const box = $('chat');
+  const atBottom = box.scrollHeight - box.scrollTop - box.clientHeight < 30;
+  box.innerHTML = lobby.chat.map(c => `<div class="entry" style="border-color:${lobby.seats[c.seat]?.color || '#888'}"><b>${esc(c.name)}:</b> ${esc(c.text)}</div>`).join('') || '<div class="muted">No messages yet.</div>';
+  if (atBottom) box.scrollTop = box.scrollHeight;
+  const unread = lobby.chat.length - ui.seenChat;
+  if (ui.logTab === 'chat') ui.seenChat = lobby.chat.length;
+  $('chat-badge').textContent = ui.logTab !== 'chat' && unread > 0 ? `(${unread})` : '';
+}
+document.querySelector('.logpanel .tabs').addEventListener('click', e => {
+  const b = e.target.closest('[data-tab]');
+  if (!b) return;
+  ui.logTab = b.dataset.tab;
+  document.querySelectorAll('.logpanel .tab').forEach(x => x.classList.toggle('active', x === b));
+  $('log').classList.toggle('hidden', ui.logTab !== 'log');
+  $('chat').classList.toggle('hidden', ui.logTab !== 'chat');
+  $('chat-form').classList.toggle('hidden', ui.logTab !== 'chat');
+  render();
+  if (ui.logTab === 'chat') { $('chat').scrollTop = $('chat').scrollHeight; $('chat-input').focus(); }
+});
+$('chat-form').addEventListener('submit', async e => {
+  e.preventDefault();
+  const text = $('chat-input').value.trim();
+  if (!text) return;
+  $('chat-input').value = '';
+  await call('chat', { text });
+});
+
+// ------------------------------------------------------------ modals
+function renderModal() {
+  const g = game, m = me();
+  let html = '';
+  if (g.phase === 'ended' && ui.dismissedEnd !== lobby.gameNumber) {
+    const rows = g.players.slice().sort((a, b) => b.vp - a.vp).map(p => {
+      const vpCards = p.devCards.filter(c => c.type === 'vp').map(c => c.variant);
+      return `<tr><td><span class="dot" style="background:${p.color}"></span> ${esc(p.name)}</td><td><b>${p.vp}</b></td>
+        <td class="muted">${[g.longestRoad.holder === p.id ? 'Largest Network' : '', g.largestArmy.holder === p.id ? 'Most Influence' : '', ...vpCards].filter(Boolean).map(esc).join(', ')}</td></tr>`;
+    }).join('');
+    html = `<h2>🏆 ${esc(P(g.winner).name)} wins!</h2><div class="muted">After ${Math.ceil(g.turnNumber / g.players.length)} rounds.</div>
+      <table class="scores"><tr><th>Player</th><th>VP</th><th>Bonuses</th></tr>${rows}</table>
+      <div class="row">${lobby.isHost ? '<button class="primary" id="btn-rematch">Rematch (same table)</button>' : '<span class="muted">The host can start a rematch.</span>'}<button id="btn-close-modal">View board</button></div>`;
+  } else if (m && g.phase === 'main' && g.turn.stage === 'discard' && g.turn.discards[m.id]) {
+    const need = g.turn.discards[m.id];
+    for (const r of RESOURCES) ui.discard[r] = Math.min(ui.discard[r] || 0, m.resources[r]);
+    const sel = RESOURCES.reduce((s, r) => s + (ui.discard[r] || 0), 0);
+    html = `<h2>📋 Regulatory audit</h2><p>You hold more than ${g.options.discardLimit} resources. Return <b>${need}</b> to the bank.</p>
+      <div class="pick-grid">${RESOURCES.map(r => `<div style="text-align:center"><div style="font-size:22px">${ICON(r)}</div><div>${ui.discard[r] || 0} / ${m.resources[r]}</div>
+        <div class="stepper"><button class="small" data-disc="${r}:-1">−</button><button class="small" data-disc="${r}:1">+</button></div></div>`).join('')}</div>
+      <div class="row"><button class="primary" id="btn-discard" ${sel === need ? '' : 'disabled'}>Discard ${sel}/${need}</button></div>`;
+  } else if (isMyTurn() && g.phase === 'main' && g.turn.stage === 'steal') {
+    html = `<h2>🕴️ Who do you take from?</h2><div class="row">${g.turn.stealCandidates.map(id => `<button data-steal="${id}">${pn(id)} (${P(id).resourceCount} cards)</button>`).join('')}</div>`;
+  } else if (ui.modal === 'venture' || ui.modal === 'squeeze') {
+    const venture = ui.modal === 'venture';
+    const need = venture ? 2 : 1;
+    html = `<h2>${venture ? '💰 Venture Round' : '📦 Supply Squeeze'}</h2><p>${esc(DEV_CARDS[ui.modal].text)}</p>
+      <div class="pick-grid">${RESOURCES.map(r => `<button data-pick="${r}" class="${ui.pick.includes(r) ? 'sel' : ''}"><span style="font-size:22px">${ICON(r)}</span>${RESOURCE_INFO[r].name}${venture ? `<small>${ui.pick.filter(x => x === r).length || ''}</small>` : ''}</button>`).join('')}</div>
+      <div class="muted" style="margin-top:6px">${venture ? `Picked: ${ui.pick.map(ICON).join(' ') || 'nothing yet'} (click a resource twice to take 2 of it)` : ''}</div>
+      <div class="row"><button class="primary" id="btn-confirm-pick" ${ui.pick.length === need ? '' : 'disabled'}>Play card</button><button id="btn-close-modal">Cancel</button></div>`;
+  }
+  $('modal').classList.toggle('hidden', !html);
+  if (html) setHTML('modal-body', html);
+}
+$('modal').addEventListener('click', e => {
+  const b = e.target.closest('button');
+  if (!b) return;
+  if (b.id === 'btn-close-modal') { if (game.phase === 'ended') ui.dismissedEnd = lobby.gameNumber; ui.modal = null; return render(); }
+  if (b.id === 'btn-rematch') return call('start');
+  if (b.dataset.disc) {
+    const [r, d] = b.dataset.disc.split(':');
+    ui.discard[r] = Math.max(0, Math.min(me().resources[r], (ui.discard[r] || 0) + +d));
+    return render();
+  }
+  if (b.id === 'btn-discard') { const res = { ...ui.discard }; ui.discard = {}; return act({ type: 'discard', resources: res }); }
+  if (b.dataset.steal !== undefined) return act({ type: 'steal', target: +b.dataset.steal });
+  if (b.dataset.pick) {
+    const r = b.dataset.pick;
+    if (ui.modal === 'squeeze') ui.pick = [r];
+    else if (ui.pick.length < 2) ui.pick.push(r); else ui.pick = [r];
+    return render();
+  }
+  if (b.id === 'btn-confirm-pick') {
+    const card = ui.modal; ui.modal = null;
+    return act(card === 'venture' ? { type: 'playDev', card, resources: ui.pick } : { type: 'playDev', card, resource: ui.pick[0] });
+  }
+});
+
+// ------------------------------------------------------------ main render
+let lastTurnKey = '';
+function render() {
+  if (!lobby) return;
+  if (!lobby.started || !game) { renderLobby(); return; }
+  show('game');
+  if (game.phase !== 'main' || game.turn?.stage !== 'main' || !isMyTurn()) ui.mode = null;
+  $('status').innerHTML = stageLabel();
+  $('room-code').textContent = lobby.code;
+  renderBoard(); renderDice(); renderHeadline(); renderPlayers(); renderMe(); renderTrade(); renderOfferBanner();
+  renderLog(); renderChat(); renderModal();
+  const mine = isMyTurn() || (game.turn?.stage === 'discard' && game.turn.discards[lobby.you]);
+  document.title = `${mine ? '▶ Your move · ' : ''}HYPERSCALE`;
+  const key = `${game.turnNumber}:${game.current}`;
+  if (key !== lastTurnKey && isMyTurn() && game.phase === 'main' && lastTurnKey) toast('Your turn!', true);
+  lastTurnKey = key;
+}
+
+boot();
+
+return {  };
+})();
+
+</script>

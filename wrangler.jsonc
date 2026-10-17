@@ -1,0 +1,17 @@
+// Cloudflare Workers config. Deploy with `npx wrangler deploy` (runs the site build first).
+{
+  "name": "hyperscale",
+  "main": "worker/index.js",
+  "compatibility_date": "2026-09-01",
+  "compatibility_flags": ["enable_request_signal"],
+  "build": { "command": "node scripts/build-site.mjs" },
+  "assets": {
+    "directory": "./site",
+    "binding": "ASSETS",
+    "not_found_handling": "single-page-application",
+    "run_worker_first": ["/api/*", "/healthz"]
+  },
+  "durable_objects": { "bindings": [{ "name": "TABLES", "class_name": "Table" }] },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["Table"] }],
+  "observability": { "enabled": true }
+}
